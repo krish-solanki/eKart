@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/signUp.dart';
 import 'package:shopping_app/widget/support_widget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,11 +16,87 @@ class _LoginState extends State<Login> {
   final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  final supabase = Supabase.instance.client;
+
+
+  Future<void> login() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final response = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text("User does not exist."),
+          ),
+        );
+        return;
+      }
+
+      if (user.emailConfirmedAt == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.orange,
+            content: Text("Please verify your email before logging in."),
+          ),
+        );
+        return;
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Home()),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text("Login successful!"),
+        ),
+      );
+    } on AuthException catch (e) {
+      Navigator.of(context).pop();
+      debugPrint("Login AuthException: ${e.message}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Login failed: ${e.message}"),
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      debugPrint("Unexpected Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("An unexpected error occurred."),
+        ),
+      );
+    }
+
+    
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
   }
 
   @override
@@ -35,15 +113,21 @@ class _LoginState extends State<Login> {
                 const SizedBox(height: 20),
                 Center(child: Image.asset('images/login.png')),
                 const SizedBox(height: 30),
-                Center(child: Text('Sign In', style: AppWidget.loginPageHeading())),
+                Center(
+                  child: Text('Sign In', style: AppWidget.loginPageHeading()),
+                ),
                 const SizedBox(height: 30),
                 Text('Email', style: AppWidget.loginPageText()),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: emailController,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Please enter your email';
-                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) return 'Enter a valid email';
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+                      return 'Enter a valid email';
+                    }
                     return null;
                   },
                   decoration: InputDecoration(
@@ -54,7 +138,10 @@ class _LoginState extends State<Login> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 15.0,
+                      horizontal: 20.0,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -64,8 +151,12 @@ class _LoginState extends State<Login> {
                   controller: passwordController,
                   obscureText: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Please enter your password';
-                    if (value.length < 6) return 'Password must be at least 6 characters';
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
                     return null;
                   },
                   decoration: InputDecoration(
@@ -76,7 +167,10 @@ class _LoginState extends State<Login> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 15.0,
+                      horizontal: 20.0,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -95,7 +189,7 @@ class _LoginState extends State<Login> {
                 GestureDetector(
                   onTap: () {
                     if (_formKey.currentState!.validate()) {
-                      // Call your custom login logic here.
+                      login(); // Call login logic
                     }
                   },
                   child: Center(
@@ -123,7 +217,10 @@ class _LoginState extends State<Login> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Don't have an account? ", style: AppWidget.lightTextFieldStyle()),
+                    Text(
+                      "Don't have an account? ",
+                      style: AppWidget.lightTextFieldStyle(),
+                    ),
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
