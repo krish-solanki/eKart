@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/login.dart';
 import 'package:shopping_app/widget/support_widget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -11,38 +12,49 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
+  String email = "", password = "", name = "";
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final _formkey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
-  /// Placeholder registration logic (replace with your own backend logic, e.g., Supabase).
-  void registration() async {
+  final supabase = Supabase.instance.client;
+
+  Future<void> registration() async {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    await Future.delayed(const Duration(seconds: 2)); // Simulate API delay
-
-    if (mounted) Navigator.of(context).pop();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: Colors.green,
-        content: Text(
-          "Registration Successful!",
-          style: TextStyle(fontSize: 18.0),
-        ),
-      ),
-    );
-
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Home())
+    try {
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: password,
       );
+      debugPrint('✅ Data Inserted');
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Home()),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              "Registration Successful!",
+              style: TextStyle(fontSize: 18.0),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.redAccent, content: Text("Error: $e")),
+      );
+      debugPrint('✅ Data not Inserted');
     }
   }
 
@@ -61,7 +73,7 @@ class _SignupState extends State<Signup> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
           child: Form(
-            key: _formkey,
+            key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,18 +85,16 @@ class _SignupState extends State<Signup> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- Name Field ---
+                // Name Field
                 Text('Name', style: AppWidget.loginPageText()),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: nameController,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.isEmpty)
                       return "Please enter your name";
-                    }
-                    if (value.length < 3) {
-                      return "Name must be at least 3 characters long";
-                    }
+                    if (value.length < 3)
+                      return "Name must be at least 3 characters";
                     return null;
                   },
                   decoration: InputDecoration(
@@ -103,18 +113,16 @@ class _SignupState extends State<Signup> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Email Field ---
+                // Email Field
                 Text('Email', style: AppWidget.loginPageText()),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: emailController,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.isEmpty)
                       return "Please enter your email";
-                    }
-                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                      return "Please enter a valid email address";
-                    }
+                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value))
+                      return "Enter a valid email";
                     return null;
                   },
                   decoration: InputDecoration(
@@ -133,19 +141,17 @@ class _SignupState extends State<Signup> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Password Field ---
+                // Password Field
                 Text('Password', style: AppWidget.loginPageText()),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: passwordController,
                   obscureText: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.isEmpty)
                       return "Please enter a password";
-                    }
-                    if (value.length < 6) {
+                    if (value.length < 6)
                       return "Password must be at least 6 characters long";
-                    }
                     return null;
                   },
                   decoration: InputDecoration(
@@ -164,10 +170,13 @@ class _SignupState extends State<Signup> {
                 ),
                 const SizedBox(height: 40),
 
-                // --- Sign Up Button ---
+                // Sign Up Button
                 GestureDetector(
                   onTap: () {
-                    if (_formkey.currentState!.validate()) {
+                    if (_formKey.currentState!.validate()) {
+                      email = emailController.text.trim();
+                      password = passwordController.text.trim();
+                      name = nameController.text.trim();
                       registration();
                     }
                   },
@@ -194,7 +203,7 @@ class _SignupState extends State<Signup> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Sign In Navigation ---
+                // Already have an account? Sign In
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -203,12 +212,10 @@ class _SignupState extends State<Signup> {
                       style: AppWidget.lightTextFieldStyle(),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const Login()),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Login()),
+                      ),
                       child: Text(
                         'Sign In',
                         style: TextStyle(

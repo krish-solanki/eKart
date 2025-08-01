@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter:
+  supabase_flutter: ^2.9.1
   image_picker:
   curved_navigation_bar:
 

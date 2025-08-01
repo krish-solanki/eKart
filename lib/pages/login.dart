@@ -1,7 +1,4 @@
-// lib/pages/login.dart
-
 import 'package:flutter/material.dart';
-import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/signUp.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 
@@ -15,28 +12,7 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final _formkey = GlobalKey<FormState>();
-
-  void userLogin() async {
-    FocusScope.of(context).unfocus(); // Dismiss the keyboard.
-
-    // Placeholder logic (replace with your own login system, e.g., Supabase)
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
-
-    if (mounted) {
-      Navigator.pop(context); // Dismiss loading indicator
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Bottomnav()),
-      );
-    }
-  }
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -52,29 +28,22 @@ class _LoginState extends State<Login> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
           child: Form(
-            key: _formkey,
+            key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
                 Center(child: Image.asset('images/login.png')),
                 const SizedBox(height: 30),
-                Center(
-                  child: Text('Sign In', style: AppWidget.loginPageHeading()),
-                ),
+                Center(child: Text('Sign In', style: AppWidget.loginPageHeading())),
                 const SizedBox(height: 30),
-
                 Text('Email', style: AppWidget.loginPageText()),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: emailController,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                      return 'Please enter a valid email address';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your email';
+                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) return 'Enter a valid email';
                     return null;
                   },
                   decoration: InputDecoration(
@@ -85,34 +54,18 @@ class _LoginState extends State<Login> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 15.0,
-                      horizontal: 20.0,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 Text('Password', style: AppWidget.loginPageText()),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: passwordController,
                   obscureText: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters long';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your password';
+                    if (value.length < 6) return 'Password must be at least 6 characters';
                     return null;
                   },
                   decoration: InputDecoration(
@@ -123,18 +76,7 @@ class _LoginState extends State<Login> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 15.0,
-                      horizontal: 20.0,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -150,11 +92,10 @@ class _LoginState extends State<Login> {
                   ),
                 ),
                 const SizedBox(height: 40),
-
                 GestureDetector(
                   onTap: () {
-                    if (_formkey.currentState!.validate()) {
-                      userLogin();
+                    if (_formKey.currentState!.validate()) {
+                      // Call your custom login logic here.
                     }
                   },
                   child: Center(
@@ -179,14 +120,10 @@ class _LoginState extends State<Login> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: AppWidget.lightTextFieldStyle(),
-                    ),
+                    Text("Don't have an account? ", style: AppWidget.lightTextFieldStyle()),
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
