@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/Admin/admin_login.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/login.dart';
 import 'package:shopping_app/pages/signup.dart';
@@ -15,7 +16,7 @@ void main() async {
     );
 
     final response = await Supabase.instance.client
-        .from('user') // 🔁 Replace with your actual table
+        .from('admin') // 🔁 Replace with your actual table
         .select()
         .limit(1);
 
@@ -32,6 +33,6 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Login());
+    return MaterialApp(home: AdminLogin());
   }
 }

@@ -18,7 +18,6 @@ class _LoginState extends State<Login> {
 
   final supabase = Supabase.instance.client;
 
-
   Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -35,49 +34,26 @@ class _LoginState extends State<Login> {
         password: password,
       );
 
-      final user = response.user;
-
       Navigator.of(context).pop(); // Close loading dialog
 
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.redAccent,
-            content: Text("User does not exist."),
-          ),
-        );
-        return;
-      }
-
-      if (user.emailConfirmedAt == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.orange,
-            content: Text("Please verify your email before logging in."),
-          ),
-        );
-        return;
-      }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Home()),
-      );
-
+      // Success
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
           content: Text("Login successful!"),
         ),
       );
+
+      // Navigate to Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Home()),
+      );
     } on AuthException catch (e) {
-      Navigator.of(context).pop();
-      debugPrint("Login AuthException: ${e.message}");
+      Navigator.of(context).pop(); // Close loading dialog
+      debugPrint("Login error code: ${e.code}");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text("Login failed: ${e.message}"),
-        ),
+        SnackBar(backgroundColor: Colors.red, content: Text(e.message)),
       );
     } catch (e) {
       Navigator.of(context).pop();
@@ -89,14 +65,6 @@ class _LoginState extends State<Login> {
         ),
       );
     }
-
-    
-  @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
   }
 
   @override
