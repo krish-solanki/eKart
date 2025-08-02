@@ -9,9 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.9.1
+  supabase_flutter:
   image_picker:
   curved_navigation_bar:
+  random_string:
+  path:
+  mime:
+  uuid:
 
 
   cupertino_icons: ^1.0.8
