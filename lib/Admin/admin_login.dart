@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/Admin/admin_home.dart';
+import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -139,7 +141,7 @@ class _AdminLoginState extends State<AdminLogin> {
   Future<void> loginAdmin() async {
     final email = emailController.text.trim();
     final pass = passwordController.text.trim();
-    debugPrint("Attempting login with Email: $email and Password: $pass");
+    final supabase = Supabase.instance.client;
 
     if (email.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -158,36 +160,53 @@ class _AdminLoginState extends State<AdminLogin> {
     );
 
     try {
-      final supabase = Supabase.instance.client;
       final response = await supabase
           .from('admin')
           .select()
-          .ilike('email', email)
+          .eq('email', email)
           .eq('password', pass)
           .maybeSingle();
 
-      Navigator.of(context).pop(); // close the loading dialog
+      Navigator.of(context).pop(); // Close loading dialog
 
       if (response == null) {
+        if ((await supabase
+                .from('admin')
+                .select('email')
+                .eq('email', email)
+                .maybeSingle()) == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.redAccent,
+              content: Text('Email not found'),
+            ),
+          );
+        } else {
+          // Email exists, but password is incorrect
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.redAccent,
+              content: Text('Password was incorrect'),
+            ),
+          );
+        }
+      } else {
+        // Success
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            backgroundColor: Colors.redAccent,
-            content: Text('Admin not found or wrong credentials'),
+            backgroundColor: Colors.green,
+            content: Text('Login successful!'),
           ),
         );
-        return;
-      }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Home()),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.green,
-          content: Text('Login successful!'),
-        ),
-      );
+        // Delay navigation to allow snackbar to show
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Bottomnav()),
+        );
+      }
     } on PostgrestException catch (e) {
       Navigator.of(context).pop();
       debugPrint('Login Faild: ${e.message}');
