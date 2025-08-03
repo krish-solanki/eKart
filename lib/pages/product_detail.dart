@@ -52,18 +52,22 @@ class _ProductDetailState extends State<ProductDetail> {
                   children: [
                     Stack(
                       children: [
-                        Container(
-                          margin: const EdgeInsets.only(left: 20),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            border: Border.all(),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
-                            child: Icon(Icons.arrow_back_ios_new_outlined),
+                        Builder(
+                          builder: (context) => GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 20),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Icon(
+                                Icons.arrow_back_ios_new_outlined,
+                                color: Colors.black,
+                                size: 28,
+                              ),
+                            ),
                           ),
                         ),
                         Center(

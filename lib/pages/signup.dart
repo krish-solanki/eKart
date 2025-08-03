@@ -210,14 +210,14 @@ class _SignupState extends State<Signup> {
         email: email,
         password: password,
       );
-
       if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.green,
             content: Text(
-              "Registration Successful! Check Your Mail for Verification link",
-              style: TextStyle(fontSize: 12.0),
+              "Verification Link Send Sucessfully",
+              style: TextStyle(fontSize: 16.0),
             ),
           ),
         );

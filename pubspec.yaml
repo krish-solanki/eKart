@@ -16,6 +16,7 @@ dependencies:
   path:
   mime:
   uuid:
+  flutter_stripe:
 
 
   cupertino_icons: ^1.0.8

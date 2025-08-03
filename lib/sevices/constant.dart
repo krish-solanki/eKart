@@ -1,0 +1,3 @@
+String publishable_key =
+    "pk_test_51Rs2oTRvBOOvyb45f6E424Td1UiHbqUA1GoLlpAWTX4fhUzYYPey2PhMExlblzIdtfWOaO88vo5m1EHv59PJYwWu00yBIXyZiV";
+String secret_key = "sk_test_51Rs2oTRvBOOvyb45x2O8nMKfT1TU83zWWG71fJCMI7RBsjmNmID3DWCUwjCmMhuf4rNUD141om7uJQ6nzHOvY42T00yjTwljVA";
