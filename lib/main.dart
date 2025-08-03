@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:shopping_app/Admin/add_product.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
@@ -8,6 +9,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Stripe.publishableKey =
+      'pk_test_51Rs2oTRvBOOvyb45f6E424Td1UiHbqUA1GoLlpAWTX4fhUzYYPey2PhMExlblzIdtfWOaO88vo5m1EHv59PJYwWu00yBIXyZiV'; // ✅ replace with your test key
+
   try {
     // Initialize Supabase
     await Supabase.initialize(
@@ -34,6 +38,6 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Home());
+    return MaterialApp(home: Bottomnav());
   }
 }
