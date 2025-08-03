@@ -1,7 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-import 'package:shopping_app/Admin/admin_home.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
-import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
