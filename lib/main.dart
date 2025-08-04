@@ -4,6 +4,7 @@ import 'package:shopping_app/Admin/add_product.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/signUp.dart';
+import 'package:shopping_app/widget/support_widget.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 

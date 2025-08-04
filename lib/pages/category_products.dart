@@ -28,8 +28,15 @@ class CategoryProducts extends StatelessWidget {
         elevation: 0,
         title: Text(category),
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: fetchCategoryProducts(),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: Supabase.instance.client
+            .from('products')
+            .stream(
+              primaryKey: ['id'],
+            ) // ⚠️ Use actual primary key of your table
+            .eq('category', category) // filter by category
+            .order('created_at') // optional: order by created date
+            .execute(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -101,12 +108,11 @@ class CategoryProducts extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetail(id: product['id']),
+                              builder: (_) => ProductDetail(id: product['id']),
                             ),
                           );
                         },
-                        child: Icon(Icons.add, color: Colors.white),
+                        child: const Icon(Icons.add, color: Colors.white),
                       ),
                     ),
                   ],
