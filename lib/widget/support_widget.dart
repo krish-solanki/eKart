@@ -9,6 +9,14 @@ class AppWidget {
     );
   }
 
+  static TextStyle orderPageTextStyle({Color? color}) {
+    return TextStyle(
+      color: color,
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+    );
+  }
+
   static TextStyle lightTextFieldStyle() {
     return TextStyle(
       color: Colors.black54,

@@ -263,6 +263,8 @@ class _ProductDetailState extends State<ProductDetail> {
         'product_id': product!['id'],
         'price': amount,
         'product_name': product!['name'],
+        'user_name': 'krish',
+        'order': 'pending',
       });
 
       debugPrint("Responce of order: ${response}");

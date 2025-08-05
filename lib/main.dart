@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:shopping_app/Admin/add_product.dart';
+import 'package:shopping_app/Admin/manage_all_orders.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/login.dart';
@@ -40,6 +41,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    return MaterialApp(home: session != null ? const Bottomnav() : const Login());
+    return MaterialApp(
+      home: session != null ? const Bottomnav() : const Login(),
+    );
   }
 }
