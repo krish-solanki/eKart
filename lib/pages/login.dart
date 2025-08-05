@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/signUp.dart';
 import 'package:shopping_app/widget/support_widget.dart';
@@ -44,11 +45,17 @@ class _LoginState extends State<Login> {
         ),
       );
 
+      if (response.user != null) {
+        final session = Supabase.instance.client.auth.currentSession;
+        debugPrint("🔐 Session: ${response.session?.accessToken}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Bottomnav()),
+        );
+      } else {
+        debugPrint("Error in session set: ${response.user}");
+      }
       // Navigate to Home
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Home()),
-      );
     } on AuthException catch (e) {
       Navigator.of(context).pop(); // Close loading dialog
       debugPrint("Login error code: ${e.code}");

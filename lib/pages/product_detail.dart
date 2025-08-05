@@ -255,12 +255,14 @@ class _ProductDetailState extends State<ProductDetail> {
 
   Future<void> insertIntoTable(String amount) async {
     final supabase = Supabase.instance.client;
+    final userEmail = supabase.auth.currentUser?.email;
     try {
       final response = await supabase.from('orders').insert({
-        'email': 'default123@gmail.com',
+        'email': userEmail,
         'image_url': product!['image_url'],
         'product_id': product!['id'],
         'price': amount,
+        'product_name': product!['name'],
       });
 
       debugPrint("Responce of order: ${response}");

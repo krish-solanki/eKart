@@ -3,9 +3,9 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:shopping_app/Admin/add_product.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
+import 'package:shopping_app/pages/login.dart';
 import 'package:shopping_app/pages/signUp.dart';
 import 'package:shopping_app/widget/support_widget.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -39,6 +39,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Bottomnav());
+    final session = Supabase.instance.client.auth.currentSession;
+    return MaterialApp(home: session != null ? const Bottomnav() : const Login());
   }
 }

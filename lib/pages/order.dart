@@ -11,6 +11,7 @@ class Order extends StatefulWidget {
 
 class _OrderState extends State<Order> {
   Stream? ordersTree;
+  final userEmail = Supabase.instance.client.auth.currentUser?.email;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,7 @@ class _OrderState extends State<Order> {
             .stream(
               primaryKey: ['id'],
             ) // ⚠️ Use actual primary key of your table
-            .eq('email', "default123@gmail.com") // filter by category
+            .eq('email', userEmail.toString()) // filter by category
             .execute(),
         builder: (context, snapshot) {
           final products = snapshot.data!;
