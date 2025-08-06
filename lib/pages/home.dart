@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_app/pages/category_products.dart';
+import 'package:shopping_app/pages/seached_product.dart';
 import 'package:shopping_app/widget/support_widget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -10,12 +12,35 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List<Map<String, dynamic>> categories = [
+  final List<Map<String, dynamic>> categories = [
     {"name": "Headphones", "image": "images/headphone_icon.png"},
     {"name": "Laptop", "image": "images/laptop.png"},
     {"name": "Watch", "image": "images/watch.png"},
     {"name": "TV", "image": "images/TV.png"},
   ];
+
+  final TextEditingController searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void handleSearch(String query) {
+    if (query.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SearchResultPage(searchQuery: query)),
+    ).then((_) {
+      // Clear search when returning
+      if (mounted) {
+        searchController.clear();
+        FocusScope.of(context).unfocus();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,31 +79,29 @@ class _HomeState extends State<Home> {
               ),
               const SizedBox(height: 30),
 
-              // Search Box
-              Container(
-                padding: const EdgeInsets.only(left: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                width: MediaQuery.of(context).size.width,
-                child: TextField(
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Search for products',
-                    hintStyle: AppWidget.lightTextFieldStyle(),
-                    prefixIcon: const Icon(Icons.search, color: Colors.black),
+              // Search bar without suggestions
+              TextField(
+                controller: searchController,
+                onSubmitted: handleSearch,
+                decoration: InputDecoration(
+                  hintText: 'Search for products',
+                  hintStyle: AppWidget.lightTextFieldStyle(),
+                  prefixIcon: const Icon(Icons.search, color: Colors.black),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
                   ),
                 ),
               ),
               const SizedBox(height: 30),
 
-              // Categories Title
+              // Categories
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Category', style: AppWidget.semiboldTetField()),
-                  Text(
+                  const Text(
                     'See all',
                     style: TextStyle(
                       color: Color(0xFFfd6f3e),
@@ -90,7 +113,6 @@ class _HomeState extends State<Home> {
               ),
               const SizedBox(height: 20),
 
-              // Category List
               SizedBox(
                 height: 130,
                 child: Row(
@@ -132,12 +154,12 @@ class _HomeState extends State<Home> {
               ),
               const SizedBox(height: 30),
 
-              // All Products Title
+              // All Products
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('All Products', style: AppWidget.semiboldTetField()),
-                  Text(
+                  const Text(
                     'See all',
                     style: TextStyle(
                       color: Color(0xFFfd6f3e),
@@ -149,12 +171,10 @@ class _HomeState extends State<Home> {
               ),
               const SizedBox(height: 20),
 
-              // Product Cards
               SizedBox(
                 height: 240,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  shrinkWrap: true,
                   children: [
                     productCard(
                       'images/headphone2.png',
@@ -220,6 +240,7 @@ class _HomeState extends State<Home> {
 class CategoryTile extends StatelessWidget {
   final String image;
   final String category;
+
   const CategoryTile({required this.image, required this.category, super.key});
 
   @override

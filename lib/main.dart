@@ -42,7 +42,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
     return MaterialApp(
-      home: session != null ? const Bottomnav() : const Login(),
+      home: session != null ? const Bottomnav() : const Bottomnav(),
     );
   }
 }
