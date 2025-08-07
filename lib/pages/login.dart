@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/Admin/admin_login.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/signUp.dart';
@@ -203,6 +204,21 @@ class _LoginState extends State<Login> {
                       ),
                       child: Text(
                         'Sign Up',
+                        style: TextStyle(
+                          color: Colors.green[600],
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => AdminLogin()),
+                      ),
+                      child: Text(
+                        'Admin',
                         style: TextStyle(
                           color: Colors.green[600],
                           fontSize: 18,

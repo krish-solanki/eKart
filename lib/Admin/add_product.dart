@@ -120,13 +120,8 @@ class _AddProductState extends State<AddProduct> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
-          },
-          child: Icon(Icons.arrow_back_ios_new_outlined),
-        ),
-        title: Text('Add Product', style: AppWidget.semiboldTetField()),
+        title: Text("Add Product", style: AppWidget.semiboldTetField()),
+        backgroundColor: const Color(0xfff2f2f2),
       ),
       body: SingleChildScrollView(
         child: Container(
