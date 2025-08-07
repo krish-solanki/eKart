@@ -19,7 +19,28 @@ class _HomeState extends State<Home> {
     {"name": "TV", "image": "images/TV.png"},
   ];
 
+  String? name, imageUrl;
   final TextEditingController searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
+
+  Future<void> loadUserData() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user != null) {
+      final metadata = user.userMetadata;
+      if (metadata != null) {
+        setState(() {
+          name = metadata['name']?.toString();
+          imageUrl = metadata['image_url']?.toString();
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -29,12 +50,10 @@ class _HomeState extends State<Home> {
 
   void handleSearch(String query) {
     if (query.isEmpty) return;
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => SearchResultPage(searchQuery: query)),
     ).then((_) {
-      // Clear search when returning
       if (mounted) {
         searchController.clear();
         FocusScope.of(context).unfocus();
@@ -59,7 +78,10 @@ class _HomeState extends State<Home> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hey, Krish', style: AppWidget.boldTextStyle()),
+                      Text(
+                        'Hey ${name?.isNotEmpty == true ? name : 'Guest'}',
+                        style: AppWidget.boldTextStyle(),
+                      ),
                       Text(
                         'Good Morning',
                         style: AppWidget.lightTextFieldStyle(),
@@ -68,18 +90,33 @@ class _HomeState extends State<Home> {
                   ),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20.0),
-                    child: Image.asset(
-                      'images/boy.jpg',
-                      height: 70,
-                      width: 70,
-                      fit: BoxFit.cover,
-                    ),
+                    child: imageUrl != null && imageUrl!.isNotEmpty
+                        ? Image.network(
+                            imageUrl!,
+                            height: 70,
+                            width: 70,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'images/boy.jpg',
+                                height: 70,
+                                width: 70,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            'images/boy.jpg',
+                            height: 70,
+                            width: 70,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 ],
               ),
               const SizedBox(height: 30),
 
-              // Search bar without suggestions
+              // Search bar
               TextField(
                 controller: searchController,
                 onSubmitted: handleSearch,
