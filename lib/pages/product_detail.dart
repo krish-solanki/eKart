@@ -310,11 +310,14 @@ class _ProductDetailState extends State<ProductDetail> {
           ),
         );
       } else {
+        
         // Insert new
         await Supabase.instance.client.from('cart').insert({
           'user_id': user.id,
           'product_id': productId,
           'quantity': quantity,
+          'product_name': product!['name'],
+          'product_price': product!['price'],
         });
         Navigator.of(context).pop(); // Close loading dialog
 
@@ -326,6 +329,7 @@ class _ProductDetailState extends State<ProductDetail> {
         );
       }
     } catch (e) {
+      debugPrint("Error adding to cart: $e");
       Navigator.of(context).pop(); // Close loading dialog
 
       ScaffoldMessenger.of(context).showSnackBar(

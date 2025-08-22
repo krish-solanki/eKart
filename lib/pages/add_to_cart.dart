@@ -12,6 +12,27 @@ class AddToCart extends StatefulWidget {
 class _AddToCartState extends State<AddToCart> {
   final supabase = Supabase.instance.client;
 
+  Future<List<Map<String, dynamic>>> fetchCart() async {
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      return [];
+    }
+
+    final response = await supabase
+        .from('cart')
+        .select(
+          'id, quantity, product_id, products!cart_product_id_fkey(name, price, image_url)',
+        )
+        .eq('user_id', user.id);
+
+    debugPrint("CART RESPONSE: $response");
+
+    if (response.isEmpty) return [];
+
+    return List<Map<String, dynamic>>.from(response as List);
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = supabase.auth.currentUser;
@@ -23,21 +44,19 @@ class _AddToCartState extends State<AddToCart> {
         backgroundColor: const Color(0xfff2f2f2),
         elevation: 0,
       ),
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: supabase
-            .from('cart')
-            .stream(primaryKey: ['id']) // live updates
-            .eq('user_id', user!.id) // only current user
-            .execute(),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: fetchCart(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text('Your cart is empty'),
-            );
+            return const Center(child: Text('Your cart is empty'));
           }
 
           final cartItems = snapshot.data!;
@@ -47,6 +66,8 @@ class _AddToCartState extends State<AddToCart> {
             itemCount: cartItems.length,
             itemBuilder: (context, index) {
               final item = cartItems[index];
+              final product = item['products'] ?? {};
+              debugPrint("CART ITEM: $item");
 
               return Container(
                 margin: const EdgeInsets.symmetric(vertical: 8),
@@ -54,9 +75,7 @@ class _AddToCartState extends State<AddToCart> {
                   elevation: 3,
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding:
-                        const EdgeInsets.only(left: 20, top: 10, bottom: 10),
-                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       color: Colors.white,
@@ -66,7 +85,7 @@ class _AddToCartState extends State<AddToCart> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            item['image_url'] ?? '',
+                            product['image_url'] ?? '',
                             fit: BoxFit.cover,
                             width: 80,
                             height: 80,
@@ -85,12 +104,12 @@ class _AddToCartState extends State<AddToCart> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                item['product_name'] ?? '',
+                                product['name'] ?? '',
                                 style: AppWidget.productName(),
                               ),
                               const SizedBox(height: 5),
                               Text(
-                                "₹ ${item['price'] ?? ''}",
+                                "${product['price'] ?? ''}",
                                 style: AppWidget.orderPageTextStyle(
                                   color: Colors.orange,
                                 ),
@@ -102,7 +121,11 @@ class _AddToCartState extends State<AddToCart> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                // decrease qty
+                                decreaseQuantity(
+                                  item['id'],
+                                  item['quantity'] ?? 1,
+                                  user!,
+                                );
                               },
                               child: Image.asset(
                                 "images/less_qty.png",
@@ -116,7 +139,11 @@ class _AddToCartState extends State<AddToCart> {
                             const SizedBox(width: 10),
                             GestureDetector(
                               onTap: () {
-                                // increase qty
+                                increaseQuantity(
+                                  item['id'],
+                                  item['quantity'] ?? 1,
+                                  user!,
+                                );
                               },
                               child: Image.asset(
                                 "images/inc_qty.png",
@@ -126,7 +153,7 @@ class _AddToCartState extends State<AddToCart> {
                               ),
                             ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -137,5 +164,40 @@ class _AddToCartState extends State<AddToCart> {
         },
       ),
     );
+  }
+
+  increaseQuantity(item, qty, user) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    await supabase
+        .from('cart')
+        .update({'quantity': qty + 1})
+        .eq('id', item)
+        .eq('user_id', user.id);
+
+    Navigator.of(context).pop();
+    setState(() {});
+  }
+
+  decreaseQuantity(item, qty, user) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    if (qty > 1) {
+      await supabase
+          .from('cart')
+          .update({'quantity': qty - 1})
+          .eq('id', item)
+          .eq('user_id', user.id);
+    }
+    Navigator.of(context).pop();
+
+    setState(() {});
   }
 }
