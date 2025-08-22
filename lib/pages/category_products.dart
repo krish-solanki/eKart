@@ -15,7 +15,6 @@ class CategoryProducts extends StatelessWidget {
         .from('products')
         .select()
         .eq('category', category);
-
     return response;
   }
 

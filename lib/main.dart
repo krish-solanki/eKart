@@ -14,7 +14,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Stripe.publishableKey =
       'pk_test_51Rs2oTRvBOOvyb45f6E424Td1UiHbqUA1GoLlpAWTX4fhUzYYPey2PhMExlblzIdtfWOaO88vo5m1EHv59PJYwWu00yBIXyZiV'; // ✅ replace with your test key
-
   try {
     // Initialize Supabase
     await Supabase.initialize(
@@ -42,7 +41,6 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    return MaterialApp(home: AdminHome(email: 'email'));
-    // return MaterialApp(home: session != null ? Bottomnav() : Login());
+    return MaterialApp(home: session != null ? Bottomnav() : Login());
   }
 }

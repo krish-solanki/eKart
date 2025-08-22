@@ -1,22 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shopping_app/Admin/add_product.dart';
 import 'package:shopping_app/Admin/admin_login.dart';
 import 'package:shopping_app/Admin/manage_all_orders.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 
 class AdminHome extends StatefulWidget {
-  final String email;
-  const AdminHome({super.key, required this.email});
+  const AdminHome({super.key});
 
   @override
   State<AdminHome> createState() => _AdminHomeState();
 }
 
 class _AdminHomeState extends State<AdminHome> {
+  String? email;
+
   @override
   Widget build(BuildContext context) {
-    return widget.email.isNotEmpty
+    setState(() {
+      getData();
+    });
+    return email != null && email!.isNotEmpty
         ? Scaffold(
+            
             backgroundColor: const Color(0xfff2f2f2),
             appBar: AppBar(
               title: Text(
@@ -113,12 +119,7 @@ class _AdminHomeState extends State<AdminHome> {
                             Spacer(),
                             GestureDetector(
                               onTap: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AdminLogin(),
-                                  ),
-                                );
+                                logout();
                               },
                               child: Container(
                                 margin: EdgeInsets.only(right: 20),
@@ -139,11 +140,35 @@ class _AdminHomeState extends State<AdminHome> {
           )
         : Scaffold(
             body: Center(
-              child: Text(
-                "Please log in as an admin",
-                style: AppWidget.boldTextStyle(),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminLogin()),
+                  );
+                },
+                child: Text(
+                  "Please log in as an admin",
+                  style: AppWidget.boldTextStyle(),
+                ),
               ),
             ),
           );
+  }
+
+  logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('username');
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => AdminLogin()),
+    );
+  }
+
+  getData() async {
+    final prefs = await SharedPreferences.getInstance();
+    email = prefs.getString('username');
+    print('Email is this: ${email}');
   }
 }

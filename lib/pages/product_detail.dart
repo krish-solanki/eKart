@@ -17,26 +17,12 @@ class ProductDetail extends StatefulWidget {
 class _ProductDetailState extends State<ProductDetail> {
   Map<String, dynamic>? product;
   Map<String, dynamic>? paymentIntent;
+  bool _isLoading = false; // Loader flag
 
   @override
   void initState() {
     super.initState();
     fetchProduct();
-  }
-
-  Future<void> fetchProduct() async {
-    final supabase = Supabase.instance.client;
-    final response = await supabase
-        .from('products')
-        .select()
-        .eq('id', widget.id)
-        .maybeSingle();
-
-    if (response != null) {
-      setState(() {
-        product = response;
-      });
-    }
   }
 
   @override
@@ -123,7 +109,8 @@ class _ProductDetailState extends State<ProductDetail> {
                           ),
                           const Spacer(),
                           GestureDetector(
-                            onTap: () => makePayment(product!['price']),
+                            // onTap: () => makePayment(product!['price']),
+                            onTap: () => addOrUpdateCart(product!['id'], 1),
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 25),
                               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -134,7 +121,7 @@ class _ProductDetailState extends State<ProductDetail> {
                               width: MediaQuery.of(context).size.width,
                               child: const Center(
                                 child: Text(
-                                  'Buy Now',
+                                  'Add To Cart',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
@@ -270,6 +257,83 @@ class _ProductDetailState extends State<ProductDetail> {
       debugPrint("Responce of order: ${response}");
     } on PostgrestException catch (e) {
       print("Error insert in orders: ${e}");
+    }
+  }
+
+  Future<void> fetchProduct() async {
+    setState(() => _isLoading = true);
+    final supabase = Supabase.instance.client;
+    final response = await supabase
+        .from('products')
+        .select()
+        .eq('id', widget.id)
+        .maybeSingle();
+
+    if (mounted) {
+      setState(() {
+        product = response;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> addOrUpdateCart(String productId, int quantity) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    if (user == null) {
+      debugPrint('User not logged in');
+      return;
+    }
+
+    setState(() => _isLoading = true); // Start loader
+
+    try {
+      final existing = await Supabase.instance.client
+          .from('cart')
+          .select()
+          .eq('user_id', user.id)
+          .eq('product_id', productId)
+          .maybeSingle();
+      debugPrint('Existing cart item: $existing');
+
+      if (existing != null) {
+        Navigator.of(context).pop(); // Close loading dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text("Already in cart"),
+          ),
+        );
+      } else {
+        // Insert new
+        await Supabase.instance.client.from('cart').insert({
+          'user_id': user.id,
+          'product_id': productId,
+          'quantity': quantity,
+        });
+        Navigator.of(context).pop(); // Close loading dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text("Added in cart"),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("Unable to add to cart"),
+        ),
+      );
     }
   }
 }

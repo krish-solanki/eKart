@@ -33,6 +33,14 @@ class AppWidget {
     );
   }
 
+    static TextStyle productName() {
+    return TextStyle(
+      color: Colors.black,
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+    );
+  }
+
   static TextStyle loginPageText() {
     return TextStyle(
       color: Colors.black,

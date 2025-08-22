@@ -18,6 +18,7 @@ dependencies:
   uuid:
   flutter_stripe:
   http:
+  shared_preferences:
 
 
   cupertino_icons: ^1.0.8

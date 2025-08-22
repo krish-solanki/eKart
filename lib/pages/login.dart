@@ -211,22 +211,23 @@ class _LoginState extends State<Login> {
                         ),
                       ),
                     ),
-
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AdminLogin()),
-                      ),
-                      child: Text(
-                        'Admin',
-                        style: TextStyle(
-                          color: Colors.green[600],
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
                   ],
+                ),
+
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminLogin()),
+                  ),
+
+                  child: Text(
+                    'Admin',
+                    style: TextStyle(
+                      color: Colors.green[600],
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shopping_app/Admin/admin_home.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
 import 'package:shopping_app/widget/support_widget.dart';
@@ -193,6 +194,7 @@ class _AdminLoginState extends State<AdminLogin> {
           );
         }
       } else {
+        saveData();
         // Success
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -201,17 +203,11 @@ class _AdminLoginState extends State<AdminLogin> {
           ),
         );
 
-        // Delay navigation to allow snackbar to show
         await Future.delayed(const Duration(milliseconds: 500));
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => Bottomnav()),
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => AdminHome(email: email)),
+          MaterialPageRoute(builder: (_) => AdminHome()),
         );
       }
     } on PostgrestException catch (e) {
@@ -232,5 +228,10 @@ class _AdminLoginState extends State<AdminLogin> {
         ),
       );
     }
+  }
+
+  saveData() async{
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('username', emailController.text.trim());
   }
 }
