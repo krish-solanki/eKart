@@ -310,7 +310,6 @@ class _ProductDetailState extends State<ProductDetail> {
           ),
         );
       } else {
-        
         // Insert new
         await Supabase.instance.client.from('cart').insert({
           'user_id': user.id,
@@ -318,6 +317,15 @@ class _ProductDetailState extends State<ProductDetail> {
           'quantity': quantity,
           'product_name': product!['name'],
           'product_price': product!['price'],
+          'total_price':
+              quantity *
+              (int.tryParse(
+                    product!['price'].toString().replaceAll(
+                      RegExp(r'[^0-9]'),
+                      '',
+                    ),
+                  ) ??
+                  0),
         });
         Navigator.of(context).pop(); // Close loading dialog
 

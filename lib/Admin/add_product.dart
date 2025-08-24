@@ -86,7 +86,7 @@ class _AddProductState extends State<AddProduct> {
         'name': nameController.text,
         'category': selectedCategory.toString().toLowerCase(),
         'image_url': url,
-        'price': priceController.text.trim() + ' Rs.',
+        'price': priceController.text.trim(),
         'description': descriptionController.text,
       });
       setState(() {
