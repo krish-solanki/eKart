@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/pages/product_detail.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/CustomWidget/product.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchResultPage extends StatelessWidget {
@@ -20,10 +23,10 @@ class SearchResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff2f2f2),
+      backgroundColor: AllColor.mainBGColor,
       appBar: AppBar(
         title: Text("Results for '$searchQuery'"),
-        backgroundColor: const Color(0xfff2f2f2),
+        backgroundColor: AllColor.mainBGColor,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchSearchResults(),
@@ -42,12 +45,15 @@ class SearchResultPage extends StatelessWidget {
             itemCount: products.length,
             itemBuilder: (context, index) {
               final product = products[index];
-              return ListTile(
-                leading: product['image_url'] != null
-                    ? Image.network(product['image_url'], width: 50)
-                    : const Icon(Icons.image_not_supported),
-                title: Text(product['name']),
-                subtitle: Text(product['price']),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10, right: 18, left: 18),
+                child: ProductCard(
+                  imagePath: product['image_url'] ?? 'images/TV.png',
+                  title: product['name'] ?? '',
+                  price: product['price'].toString() ?? '',
+                  productId: product['id'].toString() ?? '',
+                  description: product['description'].toString() ?? '',
+                ),
               );
             },
           );

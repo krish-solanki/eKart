@@ -1,8 +1,9 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,435 +16,441 @@ class AddToCart extends StatefulWidget {
 
 class _AddToCartState extends State<AddToCart> {
   final supabase = Supabase.instance.client;
-  Map<String, dynamic>? product;
-  Map<String, dynamic>? paymentIntent;
+  List<Map<String, dynamic>> cartItems = [];
+  Map<String, bool> itemLoading = {};
+  bool isLoadingCart = true;
+  int totalPrice = 0;
 
-  Future<List<Map<String, dynamic>>> fetchCart() async {
+  @override
+  void initState() {
+    super.initState();
+    fetchCart();
+  }
+
+  Future<void> fetchCart() async {
+    setState(() => isLoadingCart = true);
     final user = supabase.auth.currentUser;
-
-    if (user == null) {
-      return [];
-    }
+    if (user == null) return;
 
     final response = await supabase
         .from('cart')
         .select(
-          'id, quantity, product_id, product_price , products!cart_product_id_fkey(name, price, image_url)',
+          'id, quantity, product_id, product_price , products!cart_product_id_fkey(name, price, image_url, description)',
         )
         .eq('user_id', user.id);
 
-    debugPrint("CART RESPONSE: $response");
+    cartItems = List<Map<String, dynamic>>.from(response as List? ?? []);
+    calculateTotalPrice();
+    setState(() => isLoadingCart = false);
+  }
 
-    if (response.isEmpty) return [];
-
-    return List<Map<String, dynamic>>.from(response as List);
+  void calculateTotalPrice() {
+    totalPrice = 0;
+    for (var item in cartItems) {
+      final product = item['products'] ?? {};
+      final price = num.tryParse(product['price']?.toString() ?? "0") ?? 0;
+      final quantity = int.tryParse(item['quantity']?.toString() ?? "0") ?? 0;
+      totalPrice += (price * quantity).toInt();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = supabase.auth.currentUser;
-    int finalPrice = 0, itemPrice = 0, totalPrice = 0;
+
+    if (isLoadingCart) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (cartItems.isEmpty) {
+      return const Scaffold(body: Center(child: Text('Your cart is empty')));
+    }
 
     return Scaffold(
-      backgroundColor: const Color(0xfff2f2f2),
+      backgroundColor: AllColor.mainBGColor,
       appBar: AppBar(
         title: const Text('Add to Cart'),
-        backgroundColor: const Color(0xfff2f2f2),
+        backgroundColor: AllColor.mainBGColor,
         elevation: 0,
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: fetchCart(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(25),
+              itemCount: cartItems.length,
+              itemBuilder: (context, index) {
+                final item = cartItems[index];
+                final product = item['products'] ?? {};
+                final price =
+                    num.tryParse(product['price']?.toString() ?? "0") ?? 0;
+                final quantity =
+                    int.tryParse(item['quantity']?.toString() ?? "0") ?? 0;
+                final itemId = item['id'].toString();
 
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Your cart is empty'));
-          }
-          final cartItemsTotal = snapshot.data ?? [];
-          for (var item in cartItemsTotal) {
-            final product = item['products'] ?? {};
-            final price =
-                num.tryParse(product['price']?.toString() ?? "0") ?? 0;
-            final quantity =
-                int.tryParse(item['quantity']?.toString() ?? "0") ?? 0;
-            totalPrice += (price * quantity).toInt();
-          }
-
-          final cartItems = snapshot.data!;
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: cartItems.length,
-            itemBuilder: (context, index) {
-              final item = cartItems[index];
-              final product = item['products'] ?? {};
-              final price =
-                  num.tryParse(product['price']?.toString() ?? "0") ?? 0;
-              final quantity =
-                  int.tryParse(item['quantity']?.toString() ?? "0") ?? 0;
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: Material(
-                  elevation: 3,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.white,
-                    ),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            product['image_url'] ?? '',
-                            fit: BoxFit.cover,
-                            width: 80,
-                            height: 80,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                "images/TV.png",
-                                width: 80,
-                                height: 80,
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product['name'] ?? '',
-                                style: AppWidget.productName(),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                "₹ ${price * quantity}",
-                                style: AppWidget.orderPageTextStyle(
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                decreaseQuantity(
-                                  item['id'],
-                                  item['quantity'] ?? 1,
-                                  item['product_price'] ?? 1,
-                                  user!,
-                                );
-                              },
-                              child: Image.asset(
-                                "images/less_qty.png",
-                                fit: BoxFit.cover,
-                                height: 30,
-                                width: 30,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text('${item['quantity'] ?? 1}'),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: () {
-                                increaseQuantity(
-                                  item['id'],
-                                  item['quantity'] ?? 1,
-                                  item['product_price'] ?? 1,
-                                  user!,
-                                );
-                              },
-                              child: Image.asset(
-                                "images/inc_qty.png",
-                                fit: BoxFit.cover,
-                                height: 30,
-                                width: 30,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                return Container(
+                  height: 200,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.5),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                            height: 120,
+                            width: 120,
+                            child: Image.network(
+                              product['image_url'] ?? '',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product['name'] ?? '',
+                                  style: AppWidget.titleFont(),
+                                ),
+                                Text(
+                                  _getShortDescription(product['description']),
+                                  style: AppWidget.descriptionFont1(),
+                                ),
+                                Row(
+                                  children: [
+                                    const Text('₹'),
+                                    Text(
+                                      "${price * quantity}",
+                                      style: AppWidget.pricrFont(),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Quantity Box
+                          Container(
+                            height: 30,
+                            width: 110,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: AllColor.orangeBGColor,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(40),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                GestureDetector(
+                                  onTap: itemLoading[itemId] == true
+                                      ? null
+                                      : () => updateQuantity(
+                                          itemId,
+                                          quantity,
+                                          item['product_price'],
+                                          user,
+                                          false,
+                                        ),
+                                  child: const Icon(Icons.remove),
+                                ),
+                                itemLoading[itemId] == true
+                                    ? const SizedBox(
+                                        height: 15,
+                                        width: 15,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(' $quantity '),
+                                GestureDetector(
+                                  onTap: itemLoading[itemId] == true
+                                      ? null
+                                      : () => updateQuantity(
+                                          itemId,
+                                          quantity,
+                                          item['product_price'],
+                                          user,
+                                          true,
+                                        ),
+                                  child: const Icon(Icons.add),
+                                ),
+                              ],
+                            ),
+                          ),
 
-      bottomNavigationBar: GestureDetector(
-        onTap: () {
-          makePayment(totalPrice.toString());
-        },
-        child: Container(
-          height: 60,
-          margin: EdgeInsets.only(right: 10, left: 10, bottom: 10),
-          decoration: BoxDecoration(
-            color: Colors.green,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Center(
-            child: Text(
-              'Proceed',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+                          // Remove Button
+                          GestureDetector(
+                            onTap: () => deleteItem(context, itemId, user),
+                            child: Container(
+                              height: 30,
+                              width: 110,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AllColor.orangeBGColor,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              child: const Center(child: Text('Remove')),
+                            ),
+                          ),
+
+                          // Wishlist Button
+                          Container(
+                            height: 30,
+                            width: 110,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: AllColor.whiteColor,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(40),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Wishlist',
+                                style: TextStyle(color: AllColor.whiteColor),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
-        ),
+          if (cartItems.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                placeOrder();
+              },
+              child: Container(
+                height: 60,
+                margin: const EdgeInsets.only(right: 10, left: 10, bottom: 10),
+                decoration: BoxDecoration(
+                  color: AllColor.greenColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.shopping_cart_checkout,
+                        color: AllColor.whiteColor,
+                        size: 30,
+                      ),
+                      SizedBox(width: 5),
+                      Text(
+                        '₹$totalPrice',
+                        style: const TextStyle(
+                          color: AllColor.whiteColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  increaseQuantity(item, qty, product_price, user) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-    debugPrint("Product Price: ${product_price}");
+  // Put this method inside your widget class (or as a top-level helper)
+  String _getShortDescription(dynamic description) {
+    if (description == null) return 'Not Fetched';
 
-    await supabase
-        .from('cart')
-        .update({
-          'quantity': qty + 1,
-          'total_price':
-              (qty + 1) *
-              (int.tryParse(
-                product_price.toString().replaceAll(RegExp(r'[^0-9]'), ''),
-              )),
-        })
-        .eq('id', item)
-        .eq('user_id', user.id);
+    // Ensure it's a String
+    final desc = description is String
+        ? description.trim()
+        : description.toString().trim();
+    if (desc.isEmpty) return 'Not Fetched';
 
-    debugPrint("Quantity increased for item ID:");
+    // Split by any whitespace (handles multiple spaces/newlines/tabs)
+    final words = desc.split(RegExp(r'\s+'));
 
-    Navigator.of(context).pop();
-    setState(() {});
-  }
-
-  decreaseQuantity(item, qty, product_price, user) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-    if (qty > 1) {
-      await supabase
-          .from('cart')
-          .update({
-            'quantity': qty - 1,
-            'total_price':
-                (qty - 1) *
-                (int.tryParse(
-                  product_price.toString().replaceAll(RegExp(r'[^0-9]'), ''),
-                )),
-          })
-          .eq('id', item)
-          .eq('user_id', user.id);
+    // If more than 100 words -> show first 60 + "..."
+    if (words.length > 8) {
+      return words.take(8).join(' ') + '...';
     }
-    Navigator.of(context).pop();
 
-    setState(() {});
+    // Otherwise return full description
+    return desc;
   }
 
-  Future<void> makePayment(String amount) async {
-    debugPrint("makePayment() method entered with amount: $amount");
-
+  Future<void> placeOrder() async {
     try {
-      final paymentIntent = await createPaymentIntent(amount, 'INR');
+      final now = DateTime.now();
+      final currentDate = DateTime(now.year, now.month, now.day);
+      // Convert to string for Supabase DATE column
+      final dateString =
+          '${currentDate.year.toString().padLeft(4, '0')}-'
+          '${currentDate.month.toString().padLeft(2, '0')}-'
+          '${currentDate.day.toString().padLeft(2, '0')}';
 
-      debugPrint("✅ Payment Intent Created: $paymentIntent");
-
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentIntent['client_secret'],
-          style: ThemeMode.dark,
-          merchantDisplayName: "Krish",
-        ),
+      print(dateString);
+      final totalPrice = cartItems.fold<int>(
+        0,
+        (sum, item) =>
+            sum + ((item['product_price'] as int) * (item['quantity'] as int)),
       );
 
-      await displayPaymentSheet(amount);
-    } catch (e, stack) {
-      debugPrint("❌ makePayment Exception: $e");
-      debugPrint("🔍 StackTrace: $stack");
-
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Error'),
-          content: Text(e.toString()),
-        ),
-      );
-    }
-  }
-
-  Future<void> displayPaymentSheet(String amount) async {
-    try {
-      await Stripe.instance.presentPaymentSheet();
-      insertIntoTable(amount);
-      showDialog(
-        context: context,
-        builder: (_) => const AlertDialog(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 10),
-              Text('Payment Successful'),
-            ],
-          ),
-        ),
-      );
-      paymentIntent = null;
-    } on StripeException catch (e) {
-      print('Stripe Exception: $e');
-      showDialog(
-        context: context,
-        builder: (_) => const AlertDialog(content: Text('Payment Cancelled')),
-      );
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> createPaymentIntent(
-    String amount,
-    String currency,
-  ) async {
-    try {
-      final body = {
-        'amount': calculateAmount(amount),
-        'currency': currency,
-        'payment_method_types[]': 'card',
-      };
-
-      final response = await http.post(
-        Uri.parse('https://api.stripe.com/v1/payment_intents'),
-        headers: {
-          'Authorization':
-              'Bearer sk_test_51Rs2oTRvBOOvyb45x2O8nMKfT1TU83zWWG71fJCMI7RBsjmNmID3DWCUwjCmMhuf4rNUD141om7uJQ6nzHOvY42T00yjTwljVA', // NEVER use in frontend in production
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body,
-      );
-
-      debugPrint('🔁 Stripe Response: ${response.body}');
-
-      if (response.statusCode != 200) {
-        throw Exception('Stripe error: ${response.body}');
-      }
-
-      return jsonDecode(response.body);
-    } catch (e) {
-      throw Exception('Failed to create payment intent: $e');
-    }
-  }
-
-  String calculateAmount(String amount) {
-    final cleanedAmount = amount.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanedAmount.isEmpty) throw Exception("Invalid amount: $amount");
-    final intAmount = int.parse(cleanedAmount);
-    return (intAmount * 100).toString(); // Convert to paisa
-  }
-
-  Future<void> insertIntoTable(String amount) async {
-    final supabase = Supabase.instance.client;
-    final user = supabase.auth.currentUser;
-    final email = user?.email;
-
-    try {
-      final response = await supabase
+      // 2️⃣ Insert into `orders` table
+      final orderResponse = await supabase
           .from('orders')
           .insert({
-            'email': email,
-            'price': amount,
-            'user_name': 'krish',
-            'status': 'pending',
-            'user_id': user?.id,
+            'user_id': supabase.auth.currentUser!.id,
+            'total_price': totalPrice,
+            'status': 'Pending',
           })
           .select()
           .single();
 
-      final orderId = response['id'];
-      debugPrint("✅ Order created with ID: $orderId");
-
-      try {
-        await insertIntoOrdersItem(orderId);
-        debugPrint("✅ Finished inserting items into order_items");
-      } catch (e, st) {
-        debugPrint("❌ insertIntoOrdersItem failed: $e");
-        debugPrint("StackTrace: $st");
-      }
-
-      // 👇 Also await this
-      try {
-        await supabase.from('cart').delete().eq('user_id', user!.id);
-        debugPrint("✅ Cart cleared for user ID: ${user.id}");
-      } catch (e, st) {
-        debugPrint("❌ Failed clearing cart: $e");
-        debugPrint("StackTrace: $st");
-      }
-    } on PostgrestException catch (e) {
-      debugPrint("❌ Error insert in orders table: ${e.message}");
-    }
-  }
-
-  Future<void> insertIntoOrdersItem(String orderId) async {
-    final supabase = Supabase.instance.client;
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      debugPrint("🔍 Fetching cart items for user: ${user.id}");
-
-      // ⚠️ Make sure your "cart" table has total_price
-      final cartItems = await supabase
-          .from('cart')
-          .select('product_id, quantity, total_price')
-          .eq('user_id', user.id);
-
-      debugPrint("🛒 Cart Items: $cartItems");
-
-      if (cartItems.isEmpty) {
-        debugPrint("⚠️ No cart items found");
-        return;
-      }
-
-      final orderItemsData = cartItems.map((item) {
+      final orderId = orderResponse['id'];
+      final orderItems = cartItems.map((item) {
         return {
           'order_id': orderId,
           'product_id': item['product_id'],
-          'quantity': item['quantity'].toString(),
-          'price': item['total_price'].toString(),
+          'quantity': item['quantity'],
+          'price': item['product_price'],
+          'order_date': dateString,
         };
       }).toList();
 
-      debugPrint("📦 Inserting Order Items: $orderItemsData");
+      await supabase.from('order_items').insert(orderItems);
+      await supabase.from('cart').delete().match({
+        'user_id': supabase.auth.currentUser!.id,
+      });
+      setState(() {
+        cartItems.clear();
+      });
 
-      final response = await supabase
-          .from('order_items')
-          .insert(orderItemsData);
-
-      debugPrint("✅ Order items inserted: $response");
-    } catch (e, st) {
-      debugPrint("❌ Error inserting order items: $e");
-      debugPrint("StackTrace: $st");
+      print('✅ Order placed successfully! Order ID: $orderId');
+    } catch (error) {
+      print('❌ Failed to place order: $error');
     }
-    setState(() {});
+  }
+
+  Future<void> updateQuantity(
+    String itemId,
+    int qty,
+    int productPrice,
+    user,
+    bool isIncrease,
+  ) async {
+    setState(() => itemLoading[itemId] = true);
+
+    final newQty = isIncrease ? qty + 1 : qty - 1;
+    if (newQty < 1) {
+      setState(() => itemLoading[itemId] = false);
+      return;
+    }
+
+    await supabase
+        .from('cart')
+        .update({'quantity': newQty, 'total_price': newQty * productPrice})
+        .eq('id', itemId)
+        .eq('user_id', user.id);
+
+    // Update local cart item and total price
+    final index = cartItems.indexWhere(
+      (element) => element['id'].toString() == itemId,
+    );
+    if (index != -1) {
+      setState(() {
+        cartItems[index]['quantity'] = newQty;
+        cartItems[index]['total_price'] = newQty * productPrice;
+        itemLoading[itemId] = false;
+        calculateTotalPrice();
+      });
+    }
+  }
+
+  // Delete item
+  deleteItem(BuildContext context, String itemId, user) {
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text("Remove from Cart"),
+              content: isLoading
+                  ? const SizedBox(
+                      height: 60,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : const Text("Do you want to remove this item from cart?"),
+              actions: isLoading
+                  ? []
+                  : [
+                      TextButton(
+                        child: const Text("Cancel"),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      TextButton(
+                        child: const Text("Yes"),
+                        onPressed: () async {
+                          setStateDialog(() => isLoading = true);
+                          try {
+                            await supabase.from('cart').delete().match({
+                              'id': itemId,
+                              'user_id': user.id,
+                            });
+                            cartItems.removeWhere(
+                              (element) => element['id'].toString() == itemId,
+                            );
+                            calculateTotalPrice();
+                            Navigator.of(context).pop();
+                            setState(() {}); // refresh UI
+                            CommonFunctions.printScaffoldMessage(
+                              context,
+                              'Item removed from cart',
+                              0,
+                            );
+                          } catch (e) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error: $e")),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+            );
+          },
+        );
+      },
+    );
   }
 }

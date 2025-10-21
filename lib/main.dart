@@ -1,46 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:shopping_app/Admin/add_product.dart';
-import 'package:shopping_app/Admin/admin_home.dart';
-import 'package:shopping_app/Admin/manage_all_orders.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
-import 'package:shopping_app/pages/home.dart';
-import 'package:shopping_app/pages/login.dart';
-import 'package:shopping_app/pages/signUp.dart';
-import 'package:shopping_app/widget/support_widget.dart';
+import 'package:shopping_app/test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shopping_app/pages/Login.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  Stripe.publishableKey =
-      'pk_test_51Rs2oTRvBOOvyb45f6E424Td1UiHbqUA1GoLlpAWTX4fhUzYYPey2PhMExlblzIdtfWOaO88vo5m1EHv59PJYwWu00yBIXyZiV'; // ✅ replace with your test key
-  try {
-    // Initialize Supabase
-    await Supabase.initialize(
-      url: 'https://hummoctauxhmrealpqks.supabase.co', // ✅ Fixed URL
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1bW1vY3RhdXhobXJlYWxwcWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTU4MjUsImV4cCI6MjA2OTUzMTgyNX0.jMC0BGC-GQJBvrm9qBilyDtLMFKK2yiUvDbJn2zIUFk',
-    );
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-    final response = await Supabase.instance.client
-        .from('admin') // 🔁 Replace with your actual table
-        .select()
-        .limit(1);
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://hummoctauxhmrealpqks.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1bW1vY3RhdXhobXJlYWxwcWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTU4MjUsImV4cCI6MjA2OTUzMTgyNX0.jMC0BGC-GQJBvrm9qBilyDtLMFKK2yiUvDbJn2zIUFk',
+  );
 
-    debugPrint('✅ Supabase connection successful: $response');
-  } catch (error) {
-    debugPrint('❌ Supabase connection failed: $error');
-  }
-
+  FlutterNativeSplash.remove();
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  @override
+  void initState() {
+    super.initState(); // ✅ This is correct
+  }
 
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    return MaterialApp(home: session != null ? Bottomnav() : Login());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: session == null ? Login() : Bottomnav(),
+    );
   }
 }

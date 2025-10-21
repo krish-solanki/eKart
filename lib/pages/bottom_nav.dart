@@ -4,6 +4,7 @@ import 'package:shopping_app/pages/add_to_cart.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/order.dart';
 import 'package:shopping_app/pages/profile.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
 
 class Bottomnav extends StatefulWidget {
   const Bottomnav({super.key});
@@ -35,7 +36,7 @@ class _BottomnavState extends State<Bottomnav> {
     return Scaffold(
       bottomNavigationBar: CurvedNavigationBar(
         height: 65,
-        backgroundColor: Color(0xfff2f2f2),
+        backgroundColor: AllColor.mainBGColor,
         color: Colors.black,
         animationDuration: Duration(microseconds: 500),
         onTap: (int index) {
@@ -44,10 +45,10 @@ class _BottomnavState extends State<Bottomnav> {
           });
         },
         items: [
-          Icon(Icons.home_outlined, color: Colors.white),
-          Icon(Icons.shopping_cart_outlined, color: Colors.white),
-          Icon(Icons.shopping_bag_outlined, color: Colors.white),
-          Icon(Icons.person_outline, color: Colors.white),
+          Icon(Icons.home_outlined, color: AllColor.whiteColor),
+          Icon(Icons.shopping_cart_outlined, color: AllColor.whiteColor),
+          Icon(Icons.shopping_bag_outlined, color: AllColor.whiteColor),
+          Icon(Icons.person_outline, color: AllColor.whiteColor),
         ],
       ),
       body: pages[currentTabIndex],

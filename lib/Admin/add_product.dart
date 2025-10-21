@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -35,9 +37,11 @@ class _AddProductState extends State<AddProduct> {
         priceController.text.trim().isEmpty ||
         selectedCategory == null ||
         descriptionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
+      CommonFunctions.printScaffoldMessage(
         context,
-      ).showSnackBar(SnackBar(content: Text("Please fill all fields")));
+        'Please Fill All Fields',
+        1,
+      );
       return;
     }
 
@@ -67,14 +71,14 @@ class _AddProductState extends State<AddProduct> {
       await insertInTable(publicUrl);
     } on StorageException catch (e) {
       Navigator.of(context).pop(); // Close loader
-      ScaffoldMessenger.of(
+      CommonFunctions.printScaffoldMessage(
         context,
-      ).showSnackBar(SnackBar(content: Text("Upload failed: ${e.message}")));
+        'Product Image Upload Faild',
+        1,
+      );
     } catch (e) {
       Navigator.of(context).pop(); // Close loader
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Unexpected error: $e")));
+      CommonFunctions.printScaffoldMessage(context, 'Unexcepted Error', 1);
     }
   }
 
@@ -88,6 +92,7 @@ class _AddProductState extends State<AddProduct> {
         'image_url': url,
         'price': priceController.text.trim(),
         'description': descriptionController.text,
+        'special': null,
       });
       setState(() {
         selectedCategory = null;
@@ -95,10 +100,12 @@ class _AddProductState extends State<AddProduct> {
         nameController.clear();
         priceController.clear();
         descriptionController.clear();
-        Navigator.of(context).pop(); // ✅ Close loader
+        Navigator.of(context).pop();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product Added Successfully')),
+      CommonFunctions.printScaffoldMessage(
+        context,
+        'Product Added Successfully',
+        0,
       );
 
       await Future.delayed(Duration(milliseconds: 500));
@@ -107,10 +114,17 @@ class _AddProductState extends State<AddProduct> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Insert failed: ${e.message}")));
+      CommonFunctions.printScaffoldMessage(
+        context,
+        'Insetion faild ${e.message}',
+        1,
+      );
     } catch (e) {
       Navigator.of(context).pop(); // ✅ Close loader
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("An unexpected error occurred")),
+      CommonFunctions.printScaffoldMessage(
+        context,
+        'Unexpeccted error occured',
+        1,
       );
     }
   }
@@ -177,7 +191,7 @@ class _AddProductState extends State<AddProduct> {
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
-                  color: Color(0xFFececf8),
+                  color: AllColor.addProductInputFieldBGColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextFormField(
@@ -192,7 +206,7 @@ class _AddProductState extends State<AddProduct> {
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
-                  color: Color(0xFFececf8),
+                  color: AllColor.addProductInputFieldBGColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextFormField(
@@ -210,12 +224,12 @@ class _AddProductState extends State<AddProduct> {
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
-                  color: Color(0xFFececf8),
+                  color: AllColor.addProductInputFieldBGColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextFormField(
                   controller: descriptionController,
-                  maxLines: 5, // Allows multiple lines
+                  maxLines: 5,
                   minLines: 3,
                   keyboardType: TextInputType.multiline,
                   decoration: InputDecoration(border: InputBorder.none),
@@ -231,7 +245,7 @@ class _AddProductState extends State<AddProduct> {
                 padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
-                  color: Color(0xFFececf8),
+                  color: AllColor.addProductInputFieldBGColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -257,7 +271,7 @@ class _AddProductState extends State<AddProduct> {
                     iconSize: 36,
                     icon: const Icon(
                       Icons.arrow_drop_down,
-                      color: Colors.black,
+                      color: AllColor.blackColor,
                     ),
                     value: selectedCategory,
                   ),
@@ -272,14 +286,14 @@ class _AddProductState extends State<AddProduct> {
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AllColor.greenColor,
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: const Center(
                       child: Text(
                         'Add Product',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AllColor.whiteColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

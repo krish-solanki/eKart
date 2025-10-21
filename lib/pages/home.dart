@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_app/pages/category_products.dart';
+import 'package:shopping_app/pages/product_detail.dart';
 import 'package:shopping_app/pages/seached_product.dart';
+import 'package:shopping_app/pages/seeAllProduct.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/CustomWidget/product.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,13 +15,37 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
-  final List<Map<String, dynamic>> categories = [
-    {"name": "Headphones", "image": "images/headphone_icon.png"},
-    {"name": "Laptop", "image": "images/laptop.png"},
-    {"name": "Watch", "image": "images/watch.png"},
-    {"name": "TV", "image": "images/TV.png"},
+class _HomeState extends State<Home> with TickerProviderStateMixin {
+  List<Map<String, dynamic>> products = [];
+  bool? isLoadingProducts;
+  late TabController _tabController;
+
+  final List<String> category = [
+    'All',
+    'Trending',
+    'Popular',
+    'Headphones',
+    'Laptop',
+    'Watch',
+    'TV',
   ];
+
+  Future<void> loadProducts() async {
+    setState(() => isLoadingProducts = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('products').select();
+      debugPrint("Fetched Products: $response");
+
+      setState(() {
+        products = List<Map<String, dynamic>>.from(response);
+        isLoadingProducts = false;
+      });
+    } catch (e) {
+      setState(() => isLoadingProducts = false);
+      debugPrint('Error fetching products: $e');
+    }
+  }
 
   String? name, imageUrl;
   final TextEditingController searchController = TextEditingController();
@@ -26,6 +54,8 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     loadUserData();
+    loadProducts();
+    _tabController = TabController(length: category.length, vsync: this);
   }
 
   Future<void> loadUserData() async {
@@ -40,12 +70,6 @@ class _HomeState extends State<Home> {
         });
       }
     }
-  }
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
   }
 
   void handleSearch(String query) {
@@ -65,248 +89,350 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff2f2f2),
-      body: SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.only(top: 40.0, left: 20.0, right: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hey ${name?.isNotEmpty == true ? name : 'Guest'}',
-                        style: AppWidget.boldTextStyle(),
-                      ),
-                      Text(
-                        'Good Morning',
-                        style: AppWidget.lightTextFieldStyle(),
-                      ),
-                    ],
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20.0),
-                    child: imageUrl != null && imageUrl!.isNotEmpty
-                        ? Image.network(
-                            imageUrl!,
-                            height: 70,
-                            width: 70,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'images/boy.jpg',
-                                height: 70,
-                                width: 70,
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          )
-                        : Image.asset(
-                            'images/boy.jpg',
-                            height: 70,
-                            width: 70,
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-
-              // Search bar
-              TextField(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
                 controller: searchController,
                 onSubmitted: handleSearch,
                 decoration: InputDecoration(
                   hintText: 'Search for products',
-                  hintStyle: AppWidget.lightTextFieldStyle(),
-                  prefixIcon: const Icon(Icons.search, color: Colors.black),
+                  hintStyle: AppWidget.searchBarFont(),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AllColor.blackColor,
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10.0),
                   ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 15),
                 ),
               ),
-              const SizedBox(height: 30),
+            ),
 
-              // Categories
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Category', style: AppWidget.semiboldTetField()),
-                  const Text(
-                    'See all',
-                    style: TextStyle(
-                      color: Color(0xFFfd6f3e),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+            SizedBox(height: 10),
 
-              SizedBox(
-                height: 130,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      margin: const EdgeInsets.only(right: 10),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFD6F3E),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'All',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          return CategoryTile(
-                            image: categories[index]["image"],
-                            category: categories[index]["name"],
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+            // TabBar
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: AllColor.whiteColor,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 30),
-
-              // All Products
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('All Products', style: AppWidget.semiboldTetField()),
-                  const Text(
-                    'See all',
-                    style: TextStyle(
-                      color: Color(0xFFfd6f3e),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              SizedBox(
-                height: 240,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    productCard(
-                      'images/headphone2.png',
-                      'Headphone',
-                      '250 Rs.',
-                    ),
-                    productCard('images/watch2.png', 'Smart Watch', '150 Rs.'),
-                    productCard('images/laptop2.png', 'Laptop', '1250 Rs.'),
-                    productCard('images/TV.png', 'TV', '2250 Rs.'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget productCard(String imagePath, String title, String price) {
-    return Container(
-      margin: const EdgeInsets.only(right: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      width: 180,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Image.asset(imagePath, height: 120, fit: BoxFit.cover),
-          const SizedBox(height: 10),
-          Text(title, style: AppWidget.semiboldTetField()),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                price,
-                style: const TextStyle(
-                  color: Color(0xFFfd6f3e),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFfd6f3e),
-                  borderRadius: BorderRadius.circular(7),
-                ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
                 padding: const EdgeInsets.all(5),
-                child: const Icon(Icons.add, color: Colors.white),
+                indicator: BoxDecoration(
+                  color: AllColor.orangeBGColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 20.0),
+                labelColor: AllColor.whiteColor,
+                unselectedLabelColor: AllColor.blackColor,
+                tabs: category.map((cat) => Tab(text: cat)).toList(),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+            ),
 
-class CategoryTile extends StatelessWidget {
-  final String image;
-  final String category;
+            const SizedBox(height: 10),
 
-  const CategoryTile({required this.image, required this.category, super.key});
+            // TabBarView takes remaining space
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: category.map((cat) {
+                  if (isLoadingProducts ?? true) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CategoryProducts(category: category),
-          ),
-        );
-      },
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.all(15),
-        margin: const EdgeInsets.only(right: 15),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Image.asset(image, height: 50, width: 50, fit: BoxFit.contain),
-            const Icon(Icons.arrow_forward),
+                  // 🔹 If "All" tab → vertical list (same productCard)
+                  if (cat == "All") {
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        final product = products[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? 'No Title',
+                            price: product['price']?.toString() ?? '0',
+                            productId: product['id'].toString(),
+                            description: product['description'].toString(),
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  if (cat == "Trending") {
+                    final headphoneProducts = products
+                        .where(
+                          (p) =>
+                              (p['special']?.toString().toLowerCase().trim() ??
+                                  '') ==
+                              'trending',
+                        )
+                        .toList();
+
+                    if (headphoneProducts.isEmpty) {
+                      return const Center(
+                        child: Text("No Trending Product Found"),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: headphoneProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = headphoneProducts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? '',
+                            price: product['price'].toString() ?? '',
+                            productId: product['id'].toString() ?? '',
+                            description:
+                                product['description'].toString() ?? '',
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  if (cat == "Popular") {
+                    final headphoneProducts = products
+                        .where(
+                          (p) =>
+                              (p['category']?.toString().toLowerCase().trim() ??
+                                  '') ==
+                              'popular',
+                        )
+                        .toList();
+
+                    if (headphoneProducts.isEmpty) {
+                      return const Center(
+                        child: Text("No Popular Product Found"),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: headphoneProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = headphoneProducts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? '',
+                            price: product['price'].toString() ?? '',
+                            productId: product['id'].toString() ?? '',
+                            description:
+                                product['description'].toString() ?? '',
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  if (cat == "Headphones") {
+                    final headphoneProducts = products
+                        .where(
+                          (p) =>
+                              (p['category']?.toString().toLowerCase() ?? '') ==
+                              'headphones',
+                        )
+                        .toList();
+
+                    if (headphoneProducts.isEmpty) {
+                      return const Center(child: Text("No Headphones Found"));
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: headphoneProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = headphoneProducts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? '',
+                            price: product['price'].toString() ?? '',
+                            productId: product['id'].toString() ?? '',
+                            description:
+                                product['description'].toString() ?? '',
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  if (cat == "Laptop") {
+                    final laptopProducts = products
+                        .where(
+                          (p) =>
+                              (p['category']?.toString().toLowerCase() ?? '') ==
+                              'laptop',
+                        )
+                        .toList();
+
+                    if (laptopProducts.isEmpty) {
+                      return const Center(child: Text("No Laptop Found"));
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: laptopProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = laptopProducts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? '',
+                            price: product['price'].toString() ?? '',
+                            productId: product['id'].toString() ?? '',
+                            description:
+                                product['description'].toString() ?? '',
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  if (cat == "Watch") {
+                    final laptopProducts = products
+                        .where(
+                          (p) =>
+                              (p['category']?.toString().toLowerCase() ?? '') ==
+                              'watch',
+                        )
+                        .toList();
+
+                    if (laptopProducts.isEmpty) {
+                      return const Center(child: Text("No Watches Found"));
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: laptopProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = laptopProducts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? '',
+                            price: product['price'].toString() ?? '',
+                            productId: product['id'].toString() ?? '',
+                            description:
+                                product['description'].toString() ?? '',
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  if (cat == "TV") {
+                    final laptopProducts = products
+                        .where(
+                          (p) =>
+                              (p['category']?.toString().toLowerCase() ?? '') ==
+                              'tv',
+                        )
+                        .toList();
+
+                    if (laptopProducts.isEmpty) {
+                      return const Center(child: Text("No TV Found"));
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      itemCount: laptopProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = laptopProducts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
+                          child: ProductCard(
+                            imagePath: product['image_url'] ?? 'images/TV.png',
+                            title: product['name'] ?? '',
+                            price: product['price'].toString() ?? '',
+                            productId: product['id'].toString() ?? '',
+                            description:
+                                product['description'].toString() ?? '',
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 0),
+                        child: ProductCard(
+                          imagePath: product['image_url'] ?? 'images/TV.png',
+                          title: product['name'] ?? 'No Title',
+                          price: product['price']?.toString() ?? '0',
+                          productId: product['id'].toString(),
+                          description: product['description'].toString(),
+                        ),
+                      );
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    _tabController.dispose();
+    super.dispose();
   }
 }

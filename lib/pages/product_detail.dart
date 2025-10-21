@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,7 +31,7 @@ class _ProductDetailState extends State<ProductDetail> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: const Color(0xFFfef5f1),
+        backgroundColor: AllColor.productDetailBGColor,
         body: product == null
             ? const Center(child: CircularProgressIndicator())
             : Column(
@@ -48,7 +50,7 @@ class _ProductDetailState extends State<ProductDetail> {
                           ),
                           child: const Icon(
                             Icons.arrow_back_ios_new_outlined,
-                            color: Colors.black,
+                            color: AllColor.blackColor,
                             size: 28,
                           ),
                         ),
@@ -74,7 +76,7 @@ class _ProductDetailState extends State<ProductDetail> {
                         vertical: 20,
                       ),
                       decoration: const BoxDecoration(
-                        color: Colors.white,
+                        color: AllColor.whiteColor,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
@@ -93,7 +95,7 @@ class _ProductDetailState extends State<ProductDetail> {
                               Text(
                                 product!['price'] ?? '',
                                 style: const TextStyle(
-                                  color: Color(0xFFfd6f3e),
+                                  color: AllColor.orangeBGColor,
                                   fontSize: 20,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -115,7 +117,7 @@ class _ProductDetailState extends State<ProductDetail> {
                               margin: const EdgeInsets.only(bottom: 25),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFfd6f3e),
+                                color: AllColor.orangeBGColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               width: MediaQuery.of(context).size.width,
@@ -123,7 +125,7 @@ class _ProductDetailState extends State<ProductDetail> {
                                 child: Text(
                                   'Add To Cart',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: AllColor.whiteColor,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -139,125 +141,6 @@ class _ProductDetailState extends State<ProductDetail> {
               ),
       ),
     );
-  }
-
-  Future<void> makePayment(String amount) async {
-    debugPrint("makePayment() method entered with amount: $amount");
-
-    try {
-      final paymentIntent = await createPaymentIntent(amount, 'INR');
-
-      debugPrint("✅ Payment Intent Created: $paymentIntent");
-
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentIntent['client_secret'],
-          style: ThemeMode.dark,
-          merchantDisplayName: "Krish",
-        ),
-      );
-
-      await displayPaymentSheet(amount);
-    } catch (e, stack) {
-      debugPrint("❌ makePayment Exception: $e");
-      debugPrint("🔍 StackTrace: $stack");
-
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Error'),
-          content: Text(e.toString()),
-        ),
-      );
-    }
-  }
-
-  Future<void> displayPaymentSheet(String amount) async {
-    try {
-      await Stripe.instance.presentPaymentSheet();
-      insertIntoTable(amount);
-      showDialog(
-        context: context,
-        builder: (_) => const AlertDialog(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 10),
-              Text('Payment Successful'),
-            ],
-          ),
-        ),
-      );
-      paymentIntent = null;
-    } on StripeException catch (e) {
-      print('Stripe Exception: $e');
-      showDialog(
-        context: context,
-        builder: (_) => const AlertDialog(content: Text('Payment Cancelled')),
-      );
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> createPaymentIntent(
-    String amount,
-    String currency,
-  ) async {
-    try {
-      final body = {
-        'amount': calculateAmount(amount),
-        'currency': currency,
-        'payment_method_types[]': 'card',
-      };
-
-      final response = await http.post(
-        Uri.parse('https://api.stripe.com/v1/payment_intents'),
-        headers: {
-          'Authorization':
-              'Bearer sk_test_51Rs2oTRvBOOvyb45x2O8nMKfT1TU83zWWG71fJCMI7RBsjmNmID3DWCUwjCmMhuf4rNUD141om7uJQ6nzHOvY42T00yjTwljVA', // NEVER use in frontend in production
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body,
-      );
-
-      debugPrint('🔁 Stripe Response: ${response.body}');
-
-      if (response.statusCode != 200) {
-        throw Exception('Stripe error: ${response.body}');
-      }
-
-      return jsonDecode(response.body);
-    } catch (e) {
-      throw Exception('Failed to create payment intent: $e');
-    }
-  }
-
-  String calculateAmount(String amount) {
-    final cleanedAmount = amount.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanedAmount.isEmpty) throw Exception("Invalid amount: $amount");
-    final intAmount = int.parse(cleanedAmount);
-    return (intAmount * 100).toString(); // Convert to paisa
-  }
-
-  Future<void> insertIntoTable(String amount) async {
-    final supabase = Supabase.instance.client;
-    final userEmail = supabase.auth.currentUser?.email;
-    try {
-      final response = await supabase.from('orders').insert({
-        'email': userEmail,
-        'image_url': product!['image_url'],
-        'product_id': product!['id'],
-        'price': amount,
-        'product_name': product!['name'],
-        'user_name': 'krish',
-        'order': 'pending',
-      });
-
-      debugPrint("Responce of order: ${response}");
-    } on PostgrestException catch (e) {
-      print("Error insert in orders: ${e}");
-    }
   }
 
   Future<void> fetchProduct() async {
@@ -303,12 +186,7 @@ class _ProductDetailState extends State<ProductDetail> {
       if (existing != null) {
         Navigator.of(context).pop(); // Close loading dialog
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.green,
-            content: Text("Already in cart"),
-          ),
-        );
+        CommonFunctions.printScaffoldMessage(context, "Already in cart", 0);
       } else {
         // Insert new
         await Supabase.instance.client.from('cart').insert({
@@ -329,23 +207,13 @@ class _ProductDetailState extends State<ProductDetail> {
         });
         Navigator.of(context).pop(); // Close loading dialog
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.green,
-            content: Text("Added in cart"),
-          ),
-        );
+        CommonFunctions.printScaffoldMessage(context, 'Added in Cart', 0);
       }
     } catch (e) {
       debugPrint("Error adding to cart: $e");
       Navigator.of(context).pop(); // Close loading dialog
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text("Unable to add to cart"),
-        ),
-      );
+      CommonFunctions.printScaffoldMessage(context, 'Unable to add in cart', 1);
     }
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_app/pages/displayAllOrder.dart';
 import 'package:shopping_app/pages/login.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,29 +13,45 @@ class Order extends StatefulWidget {
 }
 
 class _OrderState extends State<Order> {
-  final userEmail = Supabase.instance.client.auth.currentUser?.email;
+  // ✅ Get the Supabase client instance
+  final supabase = Supabase.instance.client;
+
+  // ✅ Get the current user (id + email)
+  User? get currentUser => Supabase.instance.client.auth.currentUser;
+
+  Future<List<Map<String, dynamic>>> fetchOrders() async {
+    if (currentUser == null) return [];
+
+    // ✅ Use the user ID (UUID) to fetch orders for this user
+    final response = await supabase
+        .from('orders')
+        .select()
+        .eq('user_id', currentUser!.id);
+
+    return response;
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (userEmail == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => Login()),
-      );
+    if (currentUser == null) {
+      Future.microtask(() {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Login()),
+        );
+      });
+      return const SizedBox();
     }
+
     return Scaffold(
-      backgroundColor: const Color(0xfff2f2f2),
+      backgroundColor: AllColor.mainBGColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xfff2f2f2),
+        backgroundColor: AllColor.mainBGColor,
         elevation: 0,
-        title: Text("Your Orders:"),
+        title: const Text("Your Orders:"),
       ),
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: Supabase.instance.client
-            .from('orders')
-            .stream(primaryKey: ['id'])
-            .eq('email', userEmail.toString())
-            .execute(),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: fetchOrders(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -48,7 +66,7 @@ class _OrderState extends State<Order> {
           }
 
           final products = snapshot.data!;
-          debugPrint("Responce of orders: ${products}");
+          debugPrint("Response of orders: $products");
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -56,74 +74,118 @@ class _OrderState extends State<Order> {
             itemBuilder: (context, index) {
               final product = products[index];
 
-              return Container(
-                margin: EdgeInsets.only(left: 5, right: 5),
-                child: Column(
-                  children: [
-                    Material(
-                      elevation: 3,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: EdgeInsets.only(left: 20, top: 10, bottom: 10),
-                        width: MediaQuery.of(context).size.width,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white,
-                        ),
-                        child: Row(
-                          children: [
-                            product['image_url'] != null
-                                ? Image.network(
-                                    product!['image_url'],
-                                    fit: BoxFit.cover,
-                                    width: 120,
-                                    height: 120,
-                                  )
-                                : const Icon(Icons.image_not_supported),
-                            SizedBox(width: 20),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  product['product_name'] ?? 'Not Fetched',
-                                  style: AppWidget.semiboldTetField(),
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        DisplayAllOrder(orderId: product['id']),
+                  ),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.only(left: 5, right: 5, bottom: 15),
+                  child: Material(
+                    elevation: 3,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: AllColor.whiteColor,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Order ID Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Order Id:",
+                                style: AppWidget.orderIdStyle(),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                product['id']?.substring(0, 8) ?? 'Not Fetched',
+                                style: AppWidget.orderIdStyle(),
+                              ),
+                            ],
+                          ),
+
+                          /// Customer Name
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("Customer:", style: AppWidget.labelStyle()),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Krish', // Replace with dynamic name if stored
+                                style: AppWidget.dataStyle(),
+                              ),
+                            ],
+                          ),
+
+                          /// Email Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("Email:", style: AppWidget.labelStyle()),
+                              const SizedBox(width: 10),
+                              Text(
+                                currentUser?.email ?? 'Not Found',
+                                style: AppWidget.dataStyle(),
+                              ),
+                            ],
+                          ),
+
+                          /// Price Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("Price:", style: AppWidget.priceStyle()),
+                              const SizedBox(width: 10),
+                              Text(
+                                "₹ ${product['total_price'] ?? '0'}",
+                                style: AppWidget.priceStyle(),
+                              ),
+                            ],
+                          ),
+
+                          /// Status Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text("Status:", style: AppWidget.labelStyle()),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                                Text(
-                                  "Price: " + product['price'] ?? 'Not Fetched',
-                                  style: AppWidget.orderPageTextStyle(
-                                    color: Colors.orange,
+                                decoration: BoxDecoration(
+                                  color: getStatusColor(
+                                    product['status']?.toString() ?? '',
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  product['status'] ?? 'No Status',
+                                  style: const TextStyle(
+                                    color: AllColor.whiteColor,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                Row(
-                                  children: [
-                                    Text('Status: '),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: getStatusColor(
-                                          product['status'],
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        product['status'],
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -137,14 +199,14 @@ class _OrderState extends State<Order> {
     switch (status) {
       case 'Acepted':
       case 'Reactive':
-        return Colors.green;
+        return AllColor.greenColor;
       case 'Dispatched':
-        return Colors.orange;
+        return AllColor.orangeColor;
       case 'Stop':
       case 'Cancled':
-        return Colors.red;
+        return AllColor.redColor;
       default:
-        return Colors.grey;
+        return AllColor.greyColor;
     }
   }
 }

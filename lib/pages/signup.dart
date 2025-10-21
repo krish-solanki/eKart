@@ -1,8 +1,11 @@
 //http://localhost:3000
 
 import 'package:flutter/material.dart';
+import 'package:shopping_app/Admin/admin_login.dart';
 import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/login.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -63,7 +66,7 @@ class _SignupState extends State<Signup> {
                   decoration: InputDecoration(
                     hintText: "Enter Name",
                     filled: true,
-                    fillColor: const Color(0xFFF4F5F9),
+                    fillColor: AllColor.inputFieldBGColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -91,7 +94,7 @@ class _SignupState extends State<Signup> {
                   decoration: InputDecoration(
                     hintText: "Enter Email",
                     filled: true,
-                    fillColor: const Color(0xFFF4F5F9),
+                    fillColor: AllColor.inputFieldBGColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -120,7 +123,7 @@ class _SignupState extends State<Signup> {
                   decoration: InputDecoration(
                     hintText: "Enter Password",
                     filled: true,
-                    fillColor: const Color(0xFFF4F5F9),
+                    fillColor: AllColor.inputFieldBGColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -148,14 +151,14 @@ class _SignupState extends State<Signup> {
                       width: MediaQuery.of(context).size.width,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: AllColor.greenColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
                         child: Text(
                           'Sign Up',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AllColor.whiteColor,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -170,9 +173,12 @@ class _SignupState extends State<Signup> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "Already have an account? ",
-                      style: AppWidget.lightTextFieldStyle(),
+                    GestureDetector(
+                      onTap: () => AdminLogin(),
+                      child: Text(
+                        "Already have an account? ",
+                        style: AppWidget.lightTextFieldStyle(),
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.push(
@@ -182,7 +188,7 @@ class _SignupState extends State<Signup> {
                       child: Text(
                         'Sign In',
                         style: TextStyle(
-                          color: Colors.green[600],
+                          color: AllColor.greenColor600,
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
                         ),
@@ -212,24 +218,15 @@ class _SignupState extends State<Signup> {
       );
       if (mounted) {
         Navigator.of(context).pop(); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.green,
-            content: Text(
-              "Verification Link Send Sucessfully",
-              style: TextStyle(fontSize: 16.0),
-            ),
-          ),
+        CommonFunctions.printScaffoldMessage(
+          context,
+          'Verification Link sent Successfully',
+          0,
         );
       }
     } on AuthException catch (e) {
       Navigator.of(context).pop(); // Close loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.redAccent,
-          content: Text("Auth Error: ${e.message}"),
-        ),
-      );
+      CommonFunctions.printScaffoldMessage(context, 'Auth Error', 1);
     }
   }
 }

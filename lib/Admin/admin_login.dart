@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shopping_app/Admin/admin_home.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -59,7 +60,7 @@ class _AdminLoginState extends State<AdminLogin> {
                   decoration: InputDecoration(
                     hintText: "Enter Name",
                     filled: true,
-                    fillColor: const Color(0xFFF4F5F9),
+                    fillColor: AllColor.addProductInputFieldBGColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -77,7 +78,7 @@ class _AdminLoginState extends State<AdminLogin> {
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: passwordController,
-                  obscureText: false,
+                  obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Please enter a password";
@@ -90,7 +91,7 @@ class _AdminLoginState extends State<AdminLogin> {
                   decoration: InputDecoration(
                     hintText: "Enter Password",
                     filled: true,
-                    fillColor: const Color(0xFFF4F5F9),
+                    fillColor: AllColor.addProductInputFieldBGColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -115,14 +116,14 @@ class _AdminLoginState extends State<AdminLogin> {
                       width: MediaQuery.of(context).size.width,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: AllColor.greenColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
                         child: Text(
                           'Sign Up',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AllColor.whiteColor,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -148,7 +149,7 @@ class _AdminLoginState extends State<AdminLogin> {
     if (email.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: AllColor.redColor,
           content: Text('Email and password are required'),
         ),
       );
@@ -179,15 +180,15 @@ class _AdminLoginState extends State<AdminLogin> {
                 .maybeSingle()) ==
             null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Colors.redAccent,
-              content: Text('Email not found'),
+            SnackBar(
+              backgroundColor: AllColor.redAccentColor,
+              content: const Text('Email not found'),
             ),
           );
         } else {
           // Email exists, but password is incorrect
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               backgroundColor: Colors.redAccent,
               content: Text('Password was incorrect'),
             ),
@@ -197,8 +198,8 @@ class _AdminLoginState extends State<AdminLogin> {
         saveData();
         // Success
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.green,
+          SnackBar(
+            backgroundColor: AllColor.greenColor,
             content: Text('Login successful!'),
           ),
         );
@@ -215,7 +216,7 @@ class _AdminLoginState extends State<AdminLogin> {
       debugPrint('Login Faild: ${e.message}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: AllColor.redColor,
           content: Text('Login failed: ${e.message}'),
         ),
       );
@@ -223,15 +224,15 @@ class _AdminLoginState extends State<AdminLogin> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: AllColor.redColor,
           content: Text('An unexpected error occurred.'),
         ),
       );
     }
   }
 
-  saveData() async{
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('username', emailController.text.trim());
+  saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('username', emailController.text.trim());
   }
 }

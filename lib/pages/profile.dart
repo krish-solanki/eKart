@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shopping_app/pages/login.dart';
+import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -107,10 +109,11 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       await supabase.auth.updateUser(UserAttributes(data: updatedMetadata));
-      ScaffoldMessenger.of(
+      CommonFunctions.printScaffoldMessage(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Profile updated")));
-
+        'Profile updated successfully',
+        0,
+      );
       selectedImage = null;
       loadUserData();
     } catch (e) {
@@ -119,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
         context,
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
-      setState(() => isLoading = false); // STOP LOADING
+      setState(() => isLoading = false);
     }
   }
 
@@ -186,7 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 readOnly: true,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFFF4F5F9),
+                  fillColor: AllColor.inputFieldBGColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -214,7 +217,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: InputDecoration(
                   hintText: "Enter Name",
                   filled: true,
-                  fillColor: const Color(0xFFF4F5F9),
+                  fillColor: AllColor.inputFieldBGColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -248,22 +251,19 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void handleLogout() async {
-    setState(() => isLoading = true); // Start loader
-
+    setState(() => isLoading = true);
     try {
       await supabase.auth.signOut();
 
       if (mounted) {
-        setState(() => isLoading = false); // Stop loader before navigating
+        setState(() => isLoading = false);
         Navigator.of(
           context,
         ).pushReplacement(MaterialPageRoute(builder: (context) => Login()));
       }
     } catch (e) {
       setState(() => isLoading = false); // Stop loader on error
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Logout failed: $e")));
+      CommonFunctions.printScaffoldMessage(context, 'Logout Faild', 1);
     }
   }
 }
