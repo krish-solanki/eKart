@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_app/pages/product_detail.dart';
 import 'package:shopping_app/widget/Colors/Colors.dart';
+import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
 
 class ProductCard extends StatelessWidget {
@@ -27,7 +28,7 @@ class ProductCard extends StatelessWidget {
         MaterialPageRoute(builder: (context) => ProductDetail(id: productId)),
       ),
       child: Container(
-        height: 200,
+        height: 180,
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
@@ -58,7 +59,10 @@ class ProductCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title ?? '', style: AppWidget.titleFont()),
-                      Text(description, style: AppWidget.descriptionFont1()),
+                      Text(
+                        CommonFunctions.getShortDescription(description),
+                        style: AppWidget.descriptionFont1(),
+                      ),
                       Row(
                         children: [
                           const Text('₹'),

@@ -123,7 +123,7 @@ class _OrderState extends State<Order> {
                               Text("Customer:", style: AppWidget.labelStyle()),
                               const SizedBox(width: 10),
                               Text(
-                                'Krish', // Replace with dynamic name if stored
+                                product['name'] ?? 'Not Found',
                                 style: AppWidget.dataStyle(),
                               ),
                             ],

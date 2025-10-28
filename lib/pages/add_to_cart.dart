@@ -127,7 +127,9 @@ class _AddToCartState extends State<AddToCart> {
                                   style: AppWidget.titleFont(),
                                 ),
                                 Text(
-                                  _getShortDescription(product['description']),
+                                  CommonFunctions.getShortDescription(
+                                    product['description'],
+                                  ),
                                   style: AppWidget.descriptionFont1(),
                                 ),
                                 Row(
@@ -283,33 +285,13 @@ class _AddToCartState extends State<AddToCart> {
     );
   }
 
-  // Put this method inside your widget class (or as a top-level helper)
-  String _getShortDescription(dynamic description) {
-    if (description == null) return 'Not Fetched';
-
-    // Ensure it's a String
-    final desc = description is String
-        ? description.trim()
-        : description.toString().trim();
-    if (desc.isEmpty) return 'Not Fetched';
-
-    // Split by any whitespace (handles multiple spaces/newlines/tabs)
-    final words = desc.split(RegExp(r'\s+'));
-
-    // If more than 100 words -> show first 60 + "..."
-    if (words.length > 8) {
-      return words.take(8).join(' ') + '...';
-    }
-
-    // Otherwise return full description
-    return desc;
-  }
-
   Future<void> placeOrder() async {
     try {
+      final user = supabase.auth.currentUser!;
+      final userName = user.userMetadata?['name']?.toString() ?? '';
+
       final now = DateTime.now();
       final currentDate = DateTime(now.year, now.month, now.day);
-      // Convert to string for Supabase DATE column
       final dateString =
           '${currentDate.year.toString().padLeft(4, '0')}-'
           '${currentDate.month.toString().padLeft(2, '0')}-'
@@ -323,12 +305,21 @@ class _AddToCartState extends State<AddToCart> {
       );
 
       // 2️⃣ Insert into `orders` table
+      if (userName.isEmpty) {
+        CommonFunctions.printScaffoldMessage(
+          context,
+          'Please update your profile with a name before placing an order.',
+          1,
+        );
+        return;
+      }
       final orderResponse = await supabase
           .from('orders')
           .insert({
             'user_id': supabase.auth.currentUser!.id,
             'total_price': totalPrice,
             'status': 'Pending',
+            'name': userName,
           })
           .select()
           .single();

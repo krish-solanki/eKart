@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shopping_app/Admin/admin_home.dart';
 import 'package:shopping_app/Admin/admin_login.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
@@ -38,7 +39,7 @@ class _LoginState extends State<Login> {
         password: password,
       );
 
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
 
       // Success
       ScaffoldMessenger.of(context).showSnackBar(
@@ -208,9 +209,7 @@ class _LoginState extends State<Login> {
                       ),
                       SizedBox(height: 18),
                       GestureDetector(
-                        onTap: () {
-                          null;
-                        },
+                        onTap: () => signInWithGoogle(),
                         child: Center(
                           child: Container(
                             width: MediaQuery.of(context).size.width,
@@ -302,4 +301,46 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+  Future<void> signInWithGoogle() async {
+  try {
+    // 1. Get the Web Client ID
+    //    This is the Client ID from the "Web application" key in your Google Console.
+    //    It's the same one you pasted into the Supabase dashboard.
+    const webClientId = '71437014943-66hu10t16c3mmacsr1bkonbqocboua2l.apps.googleusercontent.com';
+
+    // 2. Initialize Google Sign-In
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      serverClientId: webClientId,
+    );
+
+    // 3. Start the native Google Sign-In flow
+    final googleUser = await googleSignIn.signIn();
+    
+    if (googleUser == null) {
+      return;
+    }
+
+    // 4. Get the auth tokens from the Google user
+    final googleAuth = await googleUser.authentication;
+    final accessToken = googleAuth.accessToken;
+    final idToken = googleAuth.idToken;
+
+    if (accessToken == null) {
+      throw 'No Access Token found.';
+    }
+    if (idToken == null) {
+      throw 'No ID Token found.';
+    }
+
+    await supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+
+  } catch (error) {
+    // Handle errors
+    print('Error during Google sign-in: $error');
+  }
+}
 }

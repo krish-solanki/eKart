@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shopping_app/pages/login.dart';
 import 'package:shopping_app/widget/Colors/Colors.dart';
@@ -71,7 +72,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    setState(() => isLoading = true); // START LOADING
+    setState(() => isLoading = true);
 
     String? newImageUrl;
     String? newFilePath;
@@ -253,17 +254,31 @@ class _ProfilePageState extends State<ProfilePage> {
   void handleLogout() async {
     setState(() => isLoading = true);
     try {
+      // ✅ ADDED: This is the new line to sign out from Google.
+      // This ensures the user isn't auto-signed-in next time.
+      await GoogleSignIn().signOut();
+
+      // This signs out from Supabase
+      // Your listener in main.dart will detect this and show the Login() page.
       await supabase.auth.signOut();
 
-      if (mounted) {
-        setState(() => isLoading = false);
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (context) => Login()));
-      }
+      // ✅ REMOVED: You don't need this Navigator code anymore.
+      // Your main.dart file is already listening for the signOut
+      // and will automatically switch to the Login() page.
+      /*
+    if (mounted) {
+      setState(() => isLoading = false);
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => Login()));
+    }
+    */
     } catch (e) {
-      setState(() => isLoading = false); // Stop loader on error
-      CommonFunctions.printScaffoldMessage(context, 'Logout Faild', 1);
+      if (mounted) {
+        setState(() => isLoading = false); // Stop loader on error
+      }
+      // (I also corrected the spelling of "Failed")
+      CommonFunctions.printScaffoldMessage(context, 'Logout Failed', 1);
     }
   }
 }
