@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shopping_app/Admin/admin_home.dart';
-import 'package:shopping_app/Admin/admin_login.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
-import 'package:shopping_app/pages/home.dart';
 import 'package:shopping_app/pages/signUp.dart';
 import 'package:shopping_app/widget/Colors/Colors.dart';
 import 'package:shopping_app/widget/support_widget.dart';
@@ -20,7 +18,6 @@ class _LoginState extends State<Login> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
   final supabase = Supabase.instance.client;
 
   Future<void> login() async {
@@ -30,7 +27,7 @@ class _LoginState extends State<Login> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -41,7 +38,6 @@ class _LoginState extends State<Login> {
 
       Navigator.of(context).pop();
 
-      // Success
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
@@ -50,30 +46,77 @@ class _LoginState extends State<Login> {
       );
 
       if (response.user != null) {
-        final session = Supabase.instance.client.auth.currentSession;
-        debugPrint("🔐 Session: ${response.session?.accessToken}");
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => Bottomnav()),
+          MaterialPageRoute(builder: (_) => Bottomnav()),
         );
-      } else {
-        debugPrint("Error in session set: ${response.user}");
       }
-      // Navigate to Home
     } on AuthException catch (e) {
-      Navigator.of(context).pop(); // Close loading dialog
-      debugPrint("Login error code: ${e.code}");
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(backgroundColor: Colors.red, content: Text(e.message)),
       );
     } catch (e) {
       Navigator.of(context).pop();
-      debugPrint("Unexpected Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.red,
-          content: Text("An unexpected error occurred."),
+          content: Text("Unexpected error occurred."),
         ),
+      );
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      const webClientId =
+          '71437014943-66hu10t16c3mmacsr1bkonbqocboua2l.apps.googleusercontent.com';
+
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: webClientId,
+      );
+
+      await googleSignIn.signOut();
+
+      final googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        Navigator.pop(context);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null || accessToken == null) {
+        Navigator.pop(context);
+        return;
+      }
+
+      await supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      Navigator.pop(context);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => Bottomnav()),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text(e.toString())),
       );
     }
   }
@@ -84,10 +127,7 @@ class _LoginState extends State<Login> {
       child: Scaffold(
         body: SingleChildScrollView(
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 40.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
             child: Form(
               key: _formKey,
               child: Column(
@@ -105,9 +145,7 @@ class _LoginState extends State<Login> {
                   TextFormField(
                     controller: emailController,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
+                      if (value == null || value.isEmpty) return "Enter email";
                       if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
                         return 'Enter a valid email';
                       }
@@ -122,8 +160,8 @@ class _LoginState extends State<Login> {
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                        vertical: 15.0,
-                        horizontal: 20.0,
+                        vertical: 15,
+                        horizontal: 20,
                       ),
                     ),
                   ),
@@ -134,12 +172,9 @@ class _LoginState extends State<Login> {
                     controller: passwordController,
                     obscureText: true,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
+                      if (value == null || value.isEmpty)
+                        return "Enter password";
+                      if (value.length < 6) return "Password too short";
                       return null;
                     },
                     decoration: InputDecoration(
@@ -151,114 +186,92 @@ class _LoginState extends State<Login> {
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                        vertical: 15.0,
-                        horizontal: 20.0,
+                        vertical: 15,
+                        horizontal: 20,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  // Align(
-                  //   alignment: Alignment.centerRight,
-                  //   child: Text(
-                  //     'Forgot Password?',
-                  //     style: TextStyle(
-                  //       color: Colors.green[600],
-                  //       fontSize: 15,
-                  //       fontWeight: FontWeight.w500,
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 40),
-                  Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          if (_formKey.currentState!.validate()) {
-                            login();
-                          }
-                        },
-                        child: Center(
-                          child: Container(
-                            width: MediaQuery.of(context).size.width,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'Login',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                  const SizedBox(height: 30),
+                  GestureDetector(
+                    onTap: () {
+                      if (_formKey.currentState!.validate()) login();
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Login',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      SizedBox(height: 15),
-                      Text(
-                        'or',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                        ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Center(
+                    child: Text(
+                      'or',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
                       ),
-                      SizedBox(height: 18),
-                      GestureDetector(
-                        onTap: () => signInWithGoogle(),
-                        child: Center(
-                          child: Container(
-                            width: MediaQuery.of(context).size.width,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AllColor.whiteColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.asset(
-                                  'images/google_logo.png',
-                                  height: 24,
-                                  width: 24,
-                                ),
-                                const SizedBox(width: 10),
-                                const Text(
-                                  'Google',
-                                  style: TextStyle(
-                                    color: AllColor.blackColor,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  GestureDetector(
+                    onTap: () => signInWithGoogle(),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AllColor.whiteColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'images/google_logo.png',
+                            height: 24,
+                            width: 24,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Google',
+                            style: TextStyle(
+                              color: AllColor.blackColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        "Don't have an account?",
                         style: AppWidget.lightTextFieldStyle(),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const Signup(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const Signup()),
                         ),
                         child: Text(
-                          'Sign Up',
+                          ' Sign Up',
                           style: TextStyle(
                             color: Colors.green[600],
                             fontSize: 18,
@@ -272,18 +285,16 @@ class _LoginState extends State<Login> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Have an admin account? ",
+                        "Have an admin account?",
                         style: AppWidget.lightTextFieldStyle(),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminHome(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const AdminHome()),
                         ),
                         child: Text(
-                          'Sign In',
+                          ' Sign In',
                           style: TextStyle(
                             color: Colors.green[600],
                             fontSize: 18,
@@ -301,46 +312,4 @@ class _LoginState extends State<Login> {
       ),
     );
   }
-  Future<void> signInWithGoogle() async {
-  try {
-    // 1. Get the Web Client ID
-    //    This is the Client ID from the "Web application" key in your Google Console.
-    //    It's the same one you pasted into the Supabase dashboard.
-    const webClientId = '71437014943-66hu10t16c3mmacsr1bkonbqocboua2l.apps.googleusercontent.com';
-
-    // 2. Initialize Google Sign-In
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      serverClientId: webClientId,
-    );
-
-    // 3. Start the native Google Sign-In flow
-    final googleUser = await googleSignIn.signIn();
-    
-    if (googleUser == null) {
-      return;
-    }
-
-    // 4. Get the auth tokens from the Google user
-    final googleAuth = await googleUser.authentication;
-    final accessToken = googleAuth.accessToken;
-    final idToken = googleAuth.idToken;
-
-    if (accessToken == null) {
-      throw 'No Access Token found.';
-    }
-    if (idToken == null) {
-      throw 'No ID Token found.';
-    }
-
-    await supabase.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: accessToken,
-    );
-
-  } catch (error) {
-    // Handle errors
-    print('Error during Google sign-in: $error');
-  }
-}
 }

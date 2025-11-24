@@ -115,7 +115,7 @@ class _ManageAllOrdersState extends State<ManageAllOrders> {
                             children: [
                               Text("Customer:", style: AppWidget.labelStyle()),
                               const SizedBox(width: 10),
-                              Text('Krish', style: AppWidget.dataStyle()),
+                              Text(order['name'], style: AppWidget.dataStyle()),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -124,7 +124,7 @@ class _ManageAllOrdersState extends State<ManageAllOrders> {
                               Text("Email:", style: AppWidget.labelStyle()),
                               const SizedBox(width: 10),
                               Text(
-                                'ksolanki700@rku.ac.in',
+                                order['email_id'],
                                 style: AppWidget.dataStyle(),
                               ),
                             ],

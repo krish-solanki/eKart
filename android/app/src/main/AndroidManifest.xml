@@ -35,6 +35,7 @@
             android:value="2" />
     </application>
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Used by Flutter for ProcessTextPlugin -->
     <queries>
         <intent>

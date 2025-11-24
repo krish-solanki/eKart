@@ -39,30 +39,14 @@ class _ProductDetailState extends State<ProductDetail> {
                 children: [
                   Stack(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 20, top: 20),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            border: Border.all(),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_outlined,
-                            color: AllColor.blackColor,
-                            size: 28,
-                          ),
-                        ),
-                      ),
                       Center(
                         child: product!['image_url'] != null
                             ? Container(
-                                margin: const EdgeInsets.only(top: 30),
                                 child: Image.network(
                                   product!['image_url'],
                                   fit: BoxFit.cover,
-                                  height: 400,
+                                  height: 350,
+                                  width: double.infinity,
                                 ),
                               )
                             : const Icon(Icons.image_not_supported),

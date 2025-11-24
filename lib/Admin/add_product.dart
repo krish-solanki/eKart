@@ -19,11 +19,11 @@ class AddProduct extends StatefulWidget {
 class _AddProductState extends State<AddProduct> {
   final ImagePicker _picker = ImagePicker();
   TextEditingController nameController = new TextEditingController();
+  TextEditingController catController = new TextEditingController();
   TextEditingController priceController = new TextEditingController();
   TextEditingController descriptionController = new TextEditingController();
 
   File? selectedImage;
-  String? selectedCategory;
   Future getImage() async {
     var image = await _picker.pickImage(source: ImageSource.gallery);
     setState(() {
@@ -35,7 +35,7 @@ class _AddProductState extends State<AddProduct> {
     if (selectedImage == null ||
         nameController.text.trim().isEmpty ||
         priceController.text.trim().isEmpty ||
-        selectedCategory == null ||
+        catController == null ||
         descriptionController.text.trim().isEmpty) {
       CommonFunctions.printScaffoldMessage(
         context,
@@ -88,14 +88,14 @@ class _AddProductState extends State<AddProduct> {
     try {
       final response = await supabase.from('products').insert({
         'name': nameController.text,
-        'category': selectedCategory.toString().toLowerCase(),
+        'category': catController.text.toLowerCase(),
         'image_url': url,
         'price': priceController.text.trim(),
         'description': descriptionController.text,
         'special': null,
       });
       setState(() {
-        selectedCategory = null;
+        catController.clear();
         selectedImage = null;
         nameController.clear();
         priceController.clear();
@@ -248,33 +248,9 @@ class _AddProductState extends State<AddProduct> {
                   color: AllColor.addProductInputFieldBGColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    items: categoryItem
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: item,
-                            child: Text(
-                              item,
-                              style: AppWidget.semiboldTetField(),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedCategory = newValue;
-                      });
-                    },
-                    dropdownColor: Colors.white,
-                    hint: const Text('Select Category'),
-                    iconSize: 36,
-                    icon: const Icon(
-                      Icons.arrow_drop_down,
-                      color: AllColor.blackColor,
-                    ),
-                    value: selectedCategory,
-                  ),
+                child: TextFormField(
+                  controller: catController,
+                  decoration: InputDecoration(border: InputBorder.none),
                 ),
               ),
               SizedBox(height: 20),

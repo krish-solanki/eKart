@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shopping_app/pages/bottom_nav.dart';
@@ -18,6 +17,7 @@ void main() async {
   );
 
   FlutterNativeSplash.remove();
+
   runApp(const MainApp());
 }
 
@@ -29,40 +29,25 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
-  // ✅ CHANGED: Create a variable to hold the auth subscription
-  late final StreamSubscription<AuthState> _authSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // ✅ CHANGED: Start the auth listener
-    // This will listen for when the user signs in or out
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
-      data,
-    ) {
-      // When the auth state changes, call setState()
-      // This will force the `build` method to run again
-      setState(() {});
-    });
-  }
-
-  // ✅ CHANGED: Cancel the listener when the widget is removed
-  @override
-  void dispose() {
-    _authSubscription.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Because of the listener, this `build` method will now
-    // run again after sign-in, and `session` will be updated.
-    final session = Supabase.instance.client.auth.currentSession;
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: session == null ? Login() : Bottomnav(),
+
+      /// Listening to Supabase Auth Stream
+      home: StreamBuilder<AuthState>(
+        stream: Supabase.instance.client.auth.onAuthStateChange,
+        builder: (context, snapshot) {
+          final session = Supabase.instance.client.auth.currentSession;
+
+          // Check if user is logged in or not
+          if (session == null) {
+            return Login();
+          } else {
+            return Bottomnav();
+          }
+        },
+      ),
     );
   }
 }

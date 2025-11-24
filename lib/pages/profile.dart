@@ -254,30 +254,19 @@ class _ProfilePageState extends State<ProfilePage> {
   void handleLogout() async {
     setState(() => isLoading = true);
     try {
-      // ✅ ADDED: This is the new line to sign out from Google.
-      // This ensures the user isn't auto-signed-in next time.
-      await GoogleSignIn().signOut();
-
-      // This signs out from Supabase
-      // Your listener in main.dart will detect this and show the Login() page.
-      await supabase.auth.signOut();
-
-      // ✅ REMOVED: You don't need this Navigator code anymore.
-      // Your main.dart file is already listening for the signOut
-      // and will automatically switch to the Login() page.
-      /*
-    if (mounted) {
-      setState(() => isLoading = false);
-      Navigator.of(
+      if (GoogleSignIn().currentUser != null) {
+        await GoogleSignIn().signOut();
+      } else {
+        await supabase.auth.signOut();
+      }
+      Navigator.pushReplacement(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => Login()));
-    }
-    */
+        MaterialPageRoute(builder: (context) => Login()),
+      );
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false); // Stop loader on error
       }
-      // (I also corrected the spelling of "Failed")
       CommonFunctions.printScaffoldMessage(context, 'Logout Failed', 1);
     }
   }

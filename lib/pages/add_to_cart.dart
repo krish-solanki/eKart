@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:http/http.dart' as http;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shopping_app/widget/Colors/Colors.dart';
 import 'package:shopping_app/widget/Functions/Function.dart';
 import 'package:shopping_app/widget/support_widget.dart';
@@ -15,16 +14,30 @@ class AddToCart extends StatefulWidget {
 }
 
 class _AddToCartState extends State<AddToCart> {
+  late Razorpay _razorpay;
   final supabase = Supabase.instance.client;
   List<Map<String, dynamic>> cartItems = [];
   Map<String, bool> itemLoading = {};
   bool isLoadingCart = true;
+  bool isPaymentLoading = false;
   int totalPrice = 0;
 
   @override
   void initState() {
     super.initState();
+    _razorpay = Razorpay();
+
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _onExternalWallet);
+
     fetchCart();
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
   }
 
   Future<void> fetchCart() async {
@@ -54,257 +67,90 @@ class _AddToCartState extends State<AddToCart> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> updateQuantity(String itemId, int qty, bool isIncrease) async {
+    setState(() => itemLoading[itemId] = true);
+
     final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-    if (isLoadingCart) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final newQty = isIncrease ? qty + 1 : qty - 1;
+    if (newQty < 1) {
+      setState(() => itemLoading[itemId] = false);
+      return;
     }
 
-    if (cartItems.isEmpty) {
-      return const Scaffold(body: Center(child: Text('Your cart is empty')));
+    await supabase
+        .from('cart')
+        .update({'quantity': newQty})
+        .eq('id', itemId)
+        .eq('user_id', user.id);
+
+    final index = cartItems.indexWhere((i) => i['id'].toString() == itemId);
+    if (index != -1) {
+      cartItems[index]['quantity'] = newQty;
     }
 
-    return Scaffold(
-      backgroundColor: AllColor.mainBGColor,
-      appBar: AppBar(
-        title: const Text('Add to Cart'),
-        backgroundColor: AllColor.mainBGColor,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(25),
-              itemCount: cartItems.length,
-              itemBuilder: (context, index) {
-                final item = cartItems[index];
-                final product = item['products'] ?? {};
-                final price =
-                    num.tryParse(product['price']?.toString() ?? "0") ?? 0;
-                final quantity =
-                    int.tryParse(item['quantity']?.toString() ?? "0") ?? 0;
-                final itemId = item['id'].toString();
-
-                return Container(
-                  height: 200,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.5),
-                        spreadRadius: 2,
-                        blurRadius: 5,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            height: 120,
-                            width: 120,
-                            child: Image.network(
-                              product['image_url'] ?? '',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  product['name'] ?? '',
-                                  style: AppWidget.titleFont(),
-                                ),
-                                Text(
-                                  CommonFunctions.getShortDescription(
-                                    product['description'],
-                                  ),
-                                  style: AppWidget.descriptionFont1(),
-                                ),
-                                Row(
-                                  children: [
-                                    const Text('₹'),
-                                    Text(
-                                      "${price * quantity}",
-                                      style: AppWidget.pricrFont(),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Quantity Box
-                          Container(
-                            height: 30,
-                            width: 110,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: AllColor.orangeBGColor,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                GestureDetector(
-                                  onTap: itemLoading[itemId] == true
-                                      ? null
-                                      : () => updateQuantity(
-                                          itemId,
-                                          quantity,
-                                          item['product_price'],
-                                          user,
-                                          false,
-                                        ),
-                                  child: const Icon(Icons.remove),
-                                ),
-                                itemLoading[itemId] == true
-                                    ? const SizedBox(
-                                        height: 15,
-                                        width: 15,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Text(' $quantity '),
-                                GestureDetector(
-                                  onTap: itemLoading[itemId] == true
-                                      ? null
-                                      : () => updateQuantity(
-                                          itemId,
-                                          quantity,
-                                          item['product_price'],
-                                          user,
-                                          true,
-                                        ),
-                                  child: const Icon(Icons.add),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Remove Button
-                          GestureDetector(
-                            onTap: () => deleteItem(context, itemId, user),
-                            child: Container(
-                              height: 30,
-                              width: 110,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: AllColor.orangeBGColor,
-                                  width: 2,
-                                ),
-                                borderRadius: BorderRadius.circular(40),
-                              ),
-                              child: const Center(child: Text('Remove')),
-                            ),
-                          ),
-
-                          // Wishlist Button
-                          Container(
-                            height: 30,
-                            width: 110,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: AllColor.whiteColor,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'Wishlist',
-                                style: TextStyle(color: AllColor.whiteColor),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          if (cartItems.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                placeOrder();
-              },
-              child: Container(
-                height: 60,
-                margin: const EdgeInsets.only(right: 10, left: 10, bottom: 10),
-                decoration: BoxDecoration(
-                  color: AllColor.greenColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shopping_cart_checkout,
-                        color: AllColor.whiteColor,
-                        size: 30,
-                      ),
-                      SizedBox(width: 5),
-                      Text(
-                        '₹$totalPrice',
-                        style: const TextStyle(
-                          color: AllColor.whiteColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+    calculateTotalPrice();
+    setState(() => itemLoading[itemId] = false);
   }
 
-  Future<void> placeOrder() async {
+  Future<void> deleteItem(String itemId) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    await supabase.from('cart').delete().match({
+      'id': itemId,
+      'user_id': user.id,
+    });
+    cartItems.removeWhere((item) => item['id'].toString() == itemId);
+    calculateTotalPrice();
+    setState(() {});
+    CommonFunctions.printScaffoldMessage(context, 'Item removed from cart', 0);
+  }
+
+  // Razorpay Payment
+  Future<void> startRazorpayPayment() async {
+    if (cartItems.isEmpty || totalPrice == 0) {
+      CommonFunctions.printScaffoldMessage(context, "Cart is empty!", 1);
+      return;
+    }
+
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    setState(() => isPaymentLoading = true);
+
+    var options = {
+      'key': 'rzp_test_D89mOflBbBSKZi',
+      'amount': totalPrice * 100,
+      'currency': 'INR',
+      'name': 'My Shopping App',
+      'description': 'Order Payment',
+      'prefill': {
+        'contact': user.userMetadata?['phone'] ?? '9316659446',
+        'email': user.email ?? 'test@example.com',
+      },
+      'theme': {'color': '#0F62FE'},
+    };
+
     try {
+      _razorpay.open(options);
+    } catch (e) {
+      setState(() => isPaymentLoading = false);
+      CommonFunctions.printScaffoldMessage(context, 'Error: $e', 1);
+    }
+  }
+
+  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      setState(() => isPaymentLoading = true);
+
       final user = supabase.auth.currentUser!;
       final userName = user.userMetadata?['name']?.toString() ?? '';
-
       final now = DateTime.now();
-      final currentDate = DateTime(now.year, now.month, now.day);
       final dateString =
-          '${currentDate.year.toString().padLeft(4, '0')}-'
-          '${currentDate.month.toString().padLeft(2, '0')}-'
-          '${currentDate.day.toString().padLeft(2, '0')}';
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-      print(dateString);
-      final totalPrice = cartItems.fold<int>(
-        0,
-        (sum, item) =>
-            sum + ((item['product_price'] as int) * (item['quantity'] as int)),
-      );
-
-      // 2️⃣ Insert into `orders` table
       if (userName.isEmpty) {
         CommonFunctions.printScaffoldMessage(
           context,
@@ -313,13 +159,16 @@ class _AddToCartState extends State<AddToCart> {
         );
         return;
       }
+
       final orderResponse = await supabase
           .from('orders')
           .insert({
-            'user_id': supabase.auth.currentUser!.id,
+            'user_id': user.id,
             'total_price': totalPrice,
             'status': 'Pending',
             'name': userName,
+            'email_id': user.email,
+            'payment_id': response.paymentId,
           })
           .select()
           .single();
@@ -336,112 +185,285 @@ class _AddToCartState extends State<AddToCart> {
       }).toList();
 
       await supabase.from('order_items').insert(orderItems);
-      await supabase.from('cart').delete().match({
-        'user_id': supabase.auth.currentUser!.id,
-      });
+      await supabase.from('cart').delete().match({'user_id': user.id});
+
       setState(() {
         cartItems.clear();
+        totalPrice = 0;
+        isPaymentLoading = false;
       });
 
-      print('✅ Order placed successfully! Order ID: $orderId');
+      CommonFunctions.printScaffoldMessage(
+        context,
+        '✅ Payment Successful! Order placed.',
+        0,
+      );
     } catch (error) {
-      print('❌ Failed to place order: $error');
+      setState(() => isPaymentLoading = false);
+      CommonFunctions.printScaffoldMessage(
+        context,
+        '❌ Failed to place order: $error',
+        1,
+      );
     }
   }
 
-  Future<void> updateQuantity(
-    String itemId,
-    int qty,
-    int productPrice,
-    user,
-    bool isIncrease,
-  ) async {
-    setState(() => itemLoading[itemId] = true);
-
-    final newQty = isIncrease ? qty + 1 : qty - 1;
-    if (newQty < 1) {
-      setState(() => itemLoading[itemId] = false);
-      return;
-    }
-
-    await supabase
-        .from('cart')
-        .update({'quantity': newQty, 'total_price': newQty * productPrice})
-        .eq('id', itemId)
-        .eq('user_id', user.id);
-
-    // Update local cart item and total price
-    final index = cartItems.indexWhere(
-      (element) => element['id'].toString() == itemId,
+  void _onPaymentError(PaymentFailureResponse response) {
+    setState(() => isPaymentLoading = false);
+    CommonFunctions.printScaffoldMessage(
+      context,
+      'Payment Failed: ${response.message}',
+      1,
     );
-    if (index != -1) {
-      setState(() {
-        cartItems[index]['quantity'] = newQty;
-        cartItems[index]['total_price'] = newQty * productPrice;
-        itemLoading[itemId] = false;
-        calculateTotalPrice();
-      });
-    }
   }
 
-  // Delete item
-  deleteItem(BuildContext context, String itemId, user) {
-    bool isLoading = false;
+  void _onExternalWallet(ExternalWalletResponse response) {
+    setState(() => isPaymentLoading = false);
+    CommonFunctions.printScaffoldMessage(
+      context,
+      'External Wallet: ${response.walletName}',
+      0,
+    );
+  }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text("Remove from Cart"),
-              content: isLoading
-                  ? const SizedBox(
-                      height: 60,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : const Text("Do you want to remove this item from cart?"),
-              actions: isLoading
-                  ? []
-                  : [
-                      TextButton(
-                        child: const Text("Cancel"),
-                        onPressed: () => Navigator.of(context).pop(),
+  @override
+  Widget build(BuildContext context) {
+    if (isLoadingCart) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (cartItems.isEmpty) {
+      return const Scaffold(body: Center(child: Text('Your cart is empty')));
+    }
+
+    return Scaffold(
+      backgroundColor: AllColor.mainBGColor,
+      appBar: AppBar(
+        title: const Text('Add to Cart'),
+        backgroundColor: AllColor.mainBGColor,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(25),
+                  itemCount: cartItems.length,
+                  itemBuilder: (context, index) {
+                    final item = cartItems[index];
+                    final product = item['products'] ?? {};
+                    final price =
+                        num.tryParse(product['price']?.toString() ?? "0") ?? 0;
+                    final quantity =
+                        int.tryParse(item['quantity']?.toString() ?? "0") ?? 0;
+                    final itemId = item['id'].toString();
+
+                    return Container(
+                      height: 200,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        child: const Text("Yes"),
-                        onPressed: () async {
-                          setStateDialog(() => isLoading = true);
-                          try {
-                            await supabase.from('cart').delete().match({
-                              'id': itemId,
-                              'user_id': user.id,
-                            });
-                            cartItems.removeWhere(
-                              (element) => element['id'].toString() == itemId,
-                            );
-                            calculateTotalPrice();
-                            Navigator.of(context).pop();
-                            setState(() {}); // refresh UI
-                            CommonFunctions.printScaffoldMessage(
-                              context,
-                              'Item removed from cart',
-                              0,
-                            );
-                          } catch (e) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error: $e")),
-                            );
-                          }
-                        },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              SizedBox(
+                                height: 120,
+                                width: 120,
+                                child: Image.network(
+                                  product['image_url'] ?? '',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product['name'] ?? '',
+                                      style: AppWidget.titleFont(),
+                                    ),
+                                    Text(
+                                      CommonFunctions.getShortDescription(
+                                        product['description'],
+                                      ),
+                                      style: AppWidget.descriptionFont1(),
+                                    ),
+                                    Row(
+                                      children: [
+                                        const Text('₹'),
+                                        Text(
+                                          "${price * quantity}",
+                                          style: AppWidget.pricrFont(),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 15),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // Quantity Box
+                              Container(
+                                height: 30,
+                                width: 110,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AllColor.orangeBGColor,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(40),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: itemLoading[itemId] == true
+                                          ? null
+                                          : () => updateQuantity(
+                                              itemId,
+                                              quantity,
+                                              false,
+                                            ),
+                                      child: const Icon(Icons.remove),
+                                    ),
+                                    itemLoading[itemId] == true
+                                        ? const SizedBox(
+                                            height: 15,
+                                            width: 15,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Text(' $quantity '),
+                                    GestureDetector(
+                                      onTap: itemLoading[itemId] == true
+                                          ? null
+                                          : () => updateQuantity(
+                                              itemId,
+                                              quantity,
+                                              true,
+                                            ),
+                                      child: const Icon(Icons.add),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Remove Button
+                              GestureDetector(
+                                onTap: () => deleteItem(itemId),
+                                child: Container(
+                                  height: 30,
+                                  width: 110,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AllColor.orangeBGColor,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(40),
+                                  ),
+                                  child: const Center(child: Text('Remove')),
+                                ),
+                              ),
+
+                              // Wishlist Button
+                              Container(
+                                height: 30,
+                                width: 110,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AllColor.whiteColor,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(40),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Wishlist',
+                                    style: TextStyle(
+                                      color: AllColor.whiteColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-            );
-          },
-        );
-      },
+                    );
+                  },
+                ),
+              ),
+              GestureDetector(
+                onTap: isPaymentLoading ? null : startRazorpayPayment,
+                child: Container(
+                  height: 60,
+                  margin: const EdgeInsets.only(
+                    right: 10,
+                    left: 10,
+                    bottom: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isPaymentLoading ? Colors.grey : AllColor.greenColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: isPaymentLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.shopping_cart_checkout,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '₹$totalPrice',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isPaymentLoading)
+            Container(
+              color: Colors.black26,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

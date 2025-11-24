@@ -197,12 +197,14 @@ class _OrderState extends State<Order> {
 
   Color getStatusColor(String status) {
     switch (status) {
-      case 'Acepted':
-      case 'Reactive':
+      case 'Accepted':
         return AllColor.greenColor;
-      case 'Dispatched':
-        return AllColor.orangeColor;
-      case 'Stop':
+      case 'Dispatch':
+        return AllColor.tealColor;
+      case 'On The Way':
+        return AllColor.orangeBGColor;
+      case 'Delivered':
+        return AllColor.greenColor600!;
       case 'Cancled':
         return AllColor.redColor;
       default:
