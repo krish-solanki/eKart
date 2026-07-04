@@ -1,6 +1,6 @@
 # 🛍️ eKart
 
-eKart is a Flutter-based online shopping application designed to provide a smooth and user-friendly shopping experience. Users can browse products, view product details, manage their shopping cart, and place orders through a clean and responsive interface.
+eKart is a Flutter-based online shopping application designed to provide a simple and user-friendly shopping experience. Users can browse products, view product details, manage their shopping cart, and place orders through a clean and responsive interface.
 
 ---
 
@@ -15,7 +15,7 @@ eKart is a Flutter-based online shopping application designed to provide a smoot
 - ❤️ Wishlist
 - 🛒 Shopping Cart
 - ➕ Add & Remove Cart Items
-- 💳 Checkout UI
+- 💳 Checkout
 - 👤 User Profile
 - 📱 Responsive Design
 
@@ -25,33 +25,10 @@ eKart is a Flutter-based online shopping application designed to provide a smoot
 
 - Flutter
 - Dart
-- Firebase
-- Cloud Firestore
-- Provider
+- Supabase
 - REST API
+- Provider
 - Git & GitHub
-
----
-
-## 📂 Project Structure
-
-```
-lib/
-├── controller/
-├── model/
-├── provider/
-├── service/
-├── utils/
-├── view/
-│   ├── auth/
-│   ├── home/
-│   ├── product/
-│   ├── cart/
-│   ├── profile/
-│   └── splash/
-├── widget/
-└── main.dart
-```
 
 ---
 
@@ -65,7 +42,7 @@ Make sure you have installed:
 - Dart SDK
 - Android Studio or VS Code
 - Git
-- Firebase Project (if applicable)
+- Supabase Project
 
 ---
 
@@ -89,7 +66,13 @@ cd eKart
 flutter pub get
 ```
 
-### 4. Run the application
+### 4. Configure Supabase
+
+- Create a Supabase project.
+- Copy your Project URL and Anon Key.
+- Add them to your Flutter application configuration.
+
+### 5. Run the application
 
 ```bash
 flutter run
@@ -99,13 +82,11 @@ flutter run
 
 ## 📦 Packages Used
 
-- firebase_core
-- firebase_auth
-- cloud_firestore
+- supabase_flutter
 - provider
+- http
 - cached_network_image
 - flutter_screenutil
-- http
 
 ---
 
@@ -124,23 +105,23 @@ flutter run
 
 ---
 
-## 🔥 Firebase Features
+## ☁️ Supabase Features
 
 - User Authentication
-- Cloud Firestore Database
-- Store User Information
-- Store Cart Data
-- Store Orders
+- Product Management
+- User Profile Storage
+- Shopping Cart Data
+- Order Management
 
 ---
 
 ## 🎯 Project Objectives
 
 - Build a responsive Flutter shopping application.
-- Practice state management and reusable widgets.
-- Learn Firebase integration.
-- Improve UI/UX development skills.
-- Understand e-commerce application flow.
+- Learn Supabase authentication and database integration.
+- Practice state management using Provider.
+- Improve Flutter UI development skills.
+- Understand the workflow of an e-commerce application.
 
 ---
 
@@ -155,34 +136,6 @@ flutter run
 - Address Management
 - Product Recommendations
 - Order History
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-1. Fork the repository.
-
-2. Create a new branch.
-
-```bash
-git checkout -b feature-name
-```
-
-3. Commit your changes.
-
-```bash
-git commit -m "Add new feature"
-```
-
-4. Push the branch.
-
-```bash
-git push origin feature-name
-```
-
-5. Open a Pull Request.
 
 ---
 
